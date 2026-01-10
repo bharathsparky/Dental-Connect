@@ -1,9 +1,9 @@
-import { useRef, useCallback } from "react"
+import { useRef, useCallback, useState } from "react"
 import { Odontogram } from "react-odontogram"
 import { motion } from "motion/react"
-import { Check, Info } from "lucide-react"
+import { Check, Info, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { InlayOnlayData, InlayOnlayType } from "@/stores/orderStore"
+import type { InlayOnlayData, InlayOnlayType, SurfaceInvolvement } from "@/stores/orderStore"
 
 interface InlayOnlaySelectorProps {
   inlayOnlayData: InlayOnlayData
@@ -31,6 +31,22 @@ const INLAY_ONLAY_TYPES = [
   },
 ]
 
+const SURFACE_OPTIONS = [
+  { id: 'O', label: 'O', fullName: 'Occlusal' },
+  { id: 'M', label: 'M', fullName: 'Mesial' },
+  { id: 'D', label: 'D', fullName: 'Distal' },
+  { id: 'B', label: 'B', fullName: 'Buccal' },
+  { id: 'L', label: 'L', fullName: 'Lingual' },
+]
+
+const COMMON_PATTERNS = [
+  { id: 'O', label: 'O only', description: 'Occlusal surface only' },
+  { id: 'MO', label: 'MO', description: 'Mesial-Occlusal' },
+  { id: 'DO', label: 'DO', description: 'Distal-Occlusal' },
+  { id: 'MOD', label: 'MOD', description: 'Mesial-Occlusal-Distal' },
+  { id: 'MODB', label: 'MODB', description: 'All except lingual' },
+]
+
 interface ToothSelection {
   id: string
   notations: {
@@ -43,12 +59,67 @@ interface ToothSelection {
 
 export function InlayOnlaySelector({ inlayOnlayData, onInlayOnlayDataChange }: InlayOnlaySelectorProps) {
   const prevSelectionRef = useRef<string[]>(inlayOnlayData.selectedTeeth || [])
+  const [expandedTooth, setExpandedTooth] = useState<string | null>(null)
 
   const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
     const currentSelection = selections.map(s => s.notations.fdi)
-    onInlayOnlayDataChange({ selectedTeeth: currentSelection })
+    const prevSelection = prevSelectionRef.current
+    
+    // Find added teeth
+    const addedTeeth = currentSelection.filter(t => !prevSelection.includes(t))
+    
+    // Initialize surface involvement for new teeth (default to MOD for inlay)
+    const currentSurfaces = inlayOnlayData.surfaceInvolvement || {}
+    const newSurfaces = { ...currentSurfaces }
+    
+    addedTeeth.forEach(tooth => {
+      if (!newSurfaces[tooth]) {
+        newSurfaces[tooth] = 'MOD' // Default surface pattern
+      }
+    })
+    
+    // Remove surfaces for deselected teeth
+    Object.keys(newSurfaces).forEach(tooth => {
+      if (!currentSelection.includes(tooth)) {
+        delete newSurfaces[tooth]
+      }
+    })
+    
+    onInlayOnlayDataChange({ 
+      selectedTeeth: currentSelection,
+      surfaceInvolvement: newSurfaces
+    })
     prevSelectionRef.current = currentSelection
-  }, [onInlayOnlayDataChange])
+  }, [onInlayOnlayDataChange, inlayOnlayData.surfaceInvolvement])
+
+  const updateToothSurface = (tooth: string, surface: SurfaceInvolvement) => {
+    const currentSurfaces = inlayOnlayData.surfaceInvolvement || {}
+    onInlayOnlayDataChange({
+      surfaceInvolvement: {
+        ...currentSurfaces,
+        [tooth]: surface
+      }
+    })
+  }
+
+  const toggleSurfaceLetter = (tooth: string, letter: string) => {
+    const currentPattern = inlayOnlayData.surfaceInvolvement?.[tooth] || 'O'
+    let newPattern: string
+    
+    if (currentPattern.includes(letter)) {
+      // Remove the letter
+      newPattern = currentPattern.replace(letter, '')
+    } else {
+      // Add the letter in the correct order: M, O, D, B, L
+      const order = ['M', 'O', 'D', 'B', 'L']
+      const letters = (currentPattern + letter).split('')
+      letters.sort((a, b) => order.indexOf(a) - order.indexOf(b))
+      newPattern = letters.join('')
+    }
+    
+    if (newPattern === '') newPattern = 'O' // At least occlusal required
+    updateToothSurface(tooth, newPattern as SurfaceInvolvement)
+  }
 
   return (
     <div className="space-y-6">
@@ -125,6 +196,97 @@ export function InlayOnlaySelector({ inlayOnlayData, onInlayOnlayDataChange }: I
         </motion.div>
       )}
 
+      {/* Surface Involvement per Tooth */}
+      {inlayOnlayData.selectedTeeth && inlayOnlayData.selectedTeeth.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-sm font-medium text-white mb-3">Surface Involvement</h3>
+          <p className="text-xs text-white/50 mb-3">
+            Specify which surfaces are involved for each tooth
+          </p>
+          
+          <div className="space-y-2">
+            {inlayOnlayData.selectedTeeth.sort().map((tooth) => (
+              <div key={tooth} className="bg-card rounded-xl border border-border/50 overflow-hidden">
+                <button
+                  onClick={() => setExpandedTooth(expandedTooth === tooth ? null : tooth)}
+                  className="w-full flex items-center justify-between p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <span className="font-medium text-primary">{tooth}</span>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-white text-sm">Tooth {tooth}</p>
+                      <p className="text-xs text-primary">
+                        {inlayOnlayData.surfaceInvolvement?.[tooth] || 'MOD'}
+                      </p>
+                    </div>
+                  </div>
+                  {expandedTooth === tooth ? (
+                    <ChevronUp className="w-4 h-4 text-white/50" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-white/50" />
+                  )}
+                </button>
+                
+                {expandedTooth === tooth && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    className="px-3 pb-3 border-t border-border/30"
+                  >
+                    {/* Quick Patterns */}
+                    <p className="text-[10px] text-white/50 mt-3 mb-2">Quick Select:</p>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {COMMON_PATTERNS.map((pattern) => (
+                        <button
+                          key={pattern.id}
+                          onClick={() => updateToothSurface(tooth, pattern.id as SurfaceInvolvement)}
+                          className={cn(
+                            "px-2 py-1 rounded text-[10px] font-medium transition-all",
+                            inlayOnlayData.surfaceInvolvement?.[tooth] === pattern.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-white/10 text-white/70 hover:bg-white/20"
+                          )}
+                        >
+                          {pattern.id}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Individual Surfaces */}
+                    <p className="text-[10px] text-white/50 mb-2">Or customize:</p>
+                    <div className="flex gap-2">
+                      {SURFACE_OPTIONS.map((surface) => {
+                        const isActive = inlayOnlayData.surfaceInvolvement?.[tooth]?.includes(surface.id)
+                        return (
+                          <button
+                            key={surface.id}
+                            onClick={() => toggleSurfaceLetter(tooth, surface.id)}
+                            className={cn(
+                              "flex-1 py-2 rounded-lg text-xs font-medium transition-all",
+                              isActive
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-white/10 text-white/50 hover:bg-white/20"
+                            )}
+                          >
+                            <span className="block">{surface.label}</span>
+                            <span className="block text-[8px] opacity-60">{surface.fullName}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Summary */}
       {inlayOnlayData.type && inlayOnlayData.selectedTeeth && inlayOnlayData.selectedTeeth.length > 0 && (
         <motion.div
@@ -132,12 +294,19 @@ export function InlayOnlaySelector({ inlayOnlayData, onInlayOnlayDataChange }: I
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-selected rounded-xl border border-primary/30"
         >
-          <p className="text-sm font-medium text-primary mb-1">
+          <p className="text-sm font-medium text-primary mb-2">
             {inlayOnlayData.selectedTeeth.length} {INLAY_ONLAY_TYPES.find(t => t.id === inlayOnlayData.type)?.label}{inlayOnlayData.selectedTeeth.length > 1 ? 's' : ''}
           </p>
-          <p className="text-xs text-white/60">
-            Teeth: {inlayOnlayData.selectedTeeth.sort().join(', ')}
-          </p>
+          <div className="space-y-1 text-xs">
+            {inlayOnlayData.selectedTeeth.sort().map((tooth) => (
+              <div key={tooth} className="flex items-center gap-2">
+                <span className="text-white/50">#{tooth}:</span>
+                <span className="text-white font-medium">
+                  {inlayOnlayData.surfaceInvolvement?.[tooth] || 'MOD'}
+                </span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       )}
 

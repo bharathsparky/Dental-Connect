@@ -5,14 +5,28 @@ export type Priority = 'normal' | 'urgent' | 'rush'
 export type ImpressionMaterial = 'alginate' | 'pvs' | 'polyether' | 'digital_scan' | null
 export type DentureType = 'full' | 'partial' | 'immediate' | 'overdenture' | 'obturator' | null
 export type DentureArch = 'upper' | 'lower' | 'both' | null
+export type DentureStage = 'primary_impression' | 'custom_tray' | 'bite_registration' | 'wax_try_in' | 'final_finish' | null
+export type BasePlateType = 'acrylic' | 'metal_cobalt' | 'flexible' | 'combination' | null
+export type AttachmentType = 'ball' | 'locator' | 'bar' | 'era' | null
+export type TeethMould = 'square' | 'ovoid' | 'tapering' | 'match_existing' | null
 export type BridgeType = 'conventional' | 'cantilever' | 'maryland' | 'precision_attachment' | null
 export type PonticDesign = 'ridge_lap' | 'modified_ridge_lap' | 'sanitary' | 'ovate' | null
 export type MarginType = 'shoulder' | 'chamfer' | 'knife_edge' | 'feather_edge' | null
 export type CrownSubtype = 'full' | 'three_quarter' | null
+export type OcclusalReduction = 'standard' | 'minimal' | 'extensive' | null
+export type OpposingDentition = 'natural' | 'crown' | 'denture' | 'implant' | null
+export type PostType = 'fiber' | 'metal' | 'cast' | null
 export type VeneerType = 'porcelain' | 'composite' | 'minimal_prep' | 'no_prep' | null
+export type IncisalOverlap = 'no_overlap' | 'butt_joint' | 'overlap' | 'full_coverage' | null
+export type ContactDesign = 'point' | 'broad' | null
 export type InlayOnlayType = 'inlay' | 'onlay' | 'overlay' | null
+export type SurfaceInvolvement = string // e.g., 'MOD', 'MO', 'DO', 'O', etc.
 export type NightGuardType = 'soft' | 'hard' | 'dual_laminate' | null
+export type OcclusalScheme = 'flat_plane' | 'canine_guidance' | 'group_function' | null
+export type RampDesign = 'none' | 'anterior_ramp' | 'posterior_discluder' | null
 export type RetainerType = 'hawley' | 'essix' | 'fixed_bonded' | null
+export type WireType = 'round' | 'braided' | 'flat' | 'fiber' | null
+export type RetainerSpan = '3_3' | '4_4' | '5_5' | '6_6' | null
 export type ClaspDesign = 'c_clasp' | 'i_bar' | 'wrought_wire' | 'precision_attachment' | null
 export type ImplantRestorationType = 'screw_retained' | 'cement_retained' | null
 export type ConnectionType = 'internal_hex' | 'external_hex' | 'morse_taper' | 'multi_unit' | null
@@ -21,6 +35,11 @@ export type ConnectionType = 'internal_hex' | 'external_hex' | 'morse_taper' | '
 export interface CrownData {
   crownSubtype: CrownSubtype
   marginType: MarginType
+  needsPostCore: boolean | undefined
+  postType: PostType
+  occlusalReduction: OcclusalReduction
+  opposingDentition: OpposingDentition
+  splinted: boolean
 }
 
 // Bridge-specific data
@@ -39,9 +58,14 @@ export interface BridgeData {
 export interface DentureData {
   dentureType: DentureType
   arch: DentureArch
+  stage: DentureStage  // Current fabrication stage
   missingTeeth: string[]  // For partial dentures
   claspDesign: ClaspDesign  // For partial dentures
+  basePlateType: BasePlateType  // For partial dentures
   implantPositions: string[]  // For overdentures
+  attachmentType: AttachmentType  // For overdentures
+  teethMould: TeethMould  // Teeth shape preference
+  teethSize: 'small' | 'medium' | 'large' | null
 }
 
 // Implant-specific data
@@ -69,12 +93,17 @@ export interface ImplantData {
 export interface VeneerData {
   veneerType: VeneerType
   selectedTeeth: string[]
+  incisalOverlap: IncisalOverlap
+  contactDesign: ContactDesign
+  needsTryIn: boolean
+  lengthModification: 'shorter' | 'same' | 'longer' | null
 }
 
 // Inlay/Onlay-specific data
 export interface InlayOnlayData {
   type: InlayOnlayType
   selectedTeeth: string[]
+  surfaceInvolvement: Record<string, SurfaceInvolvement>  // { "36": "MOD", "46": "DO" }
 }
 
 // Night Guard/Splint data
@@ -82,12 +111,18 @@ export interface NightGuardData {
   guardType: NightGuardType
   arch: DentureArch
   thickness: 'thin' | 'medium' | 'thick' | null
+  occlusalScheme: OcclusalScheme  // For hard splints
+  rampDesign: RampDesign  // For TMJ cases
+  tmjSymptoms: string[]  // clicking, popping, locking, pain, limited_opening
 }
 
 // Retainer data
 export interface RetainerData {
   retainerType: RetainerType
   arch: DentureArch
+  wireType: WireType  // For fixed/bonded
+  span: RetainerSpan  // 3-3, 4-4, 5-5, 6-6
+  claspType: string | null  // For Hawley
 }
 
 // Wax-up/Study Model data
@@ -213,6 +248,11 @@ export interface OrderFormState {
 const initialCrownData: CrownData = {
   crownSubtype: 'full',
   marginType: null,
+  needsPostCore: undefined,
+  postType: null,
+  occlusalReduction: null,
+  opposingDentition: null,
+  splinted: false,
 }
 
 const initialBridgeData: BridgeData = {
@@ -229,9 +269,14 @@ const initialBridgeData: BridgeData = {
 const initialDentureData: DentureData = {
   dentureType: null,
   arch: null,
+  stage: null,
   missingTeeth: [],
   claspDesign: null,
+  basePlateType: null,
   implantPositions: [],
+  attachmentType: null,
+  teethMould: null,
+  teethSize: null,
 }
 
 const initialImplantData: ImplantData = {
@@ -253,22 +298,33 @@ const initialImplantData: ImplantData = {
 const initialVeneerData: VeneerData = {
   veneerType: null,
   selectedTeeth: [],
+  incisalOverlap: null,
+  contactDesign: null,
+  needsTryIn: false,
+  lengthModification: null,
 }
 
 const initialInlayOnlayData: InlayOnlayData = {
   type: null,
   selectedTeeth: [],
+  surfaceInvolvement: {},
 }
 
 const initialNightGuardData: NightGuardData = {
   guardType: null,
   arch: null,
   thickness: null,
+  occlusalScheme: null,
+  rampDesign: null,
+  tmjSymptoms: [],
 }
 
 const initialRetainerData: RetainerData = {
   retainerType: null,
   arch: null,
+  wireType: null,
+  span: null,
+  claspType: null,
 }
 
 const initialWaxupData: WaxupData = {

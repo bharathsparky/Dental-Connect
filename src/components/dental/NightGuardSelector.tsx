@@ -1,7 +1,7 @@
 import { motion } from "motion/react"
-import { Check, Moon, Activity, Shield } from "lucide-react"
+import { Check, Moon, Activity, Shield, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { NightGuardData, NightGuardType, DentureArch } from "@/stores/orderStore"
+import type { NightGuardData, NightGuardType, DentureArch, OcclusalScheme, RampDesign } from "@/stores/orderStore"
 
 interface NightGuardSelectorProps {
   nightGuardData: NightGuardData
@@ -46,7 +46,35 @@ const THICKNESS_OPTIONS = [
   { id: 'thick', label: 'Thick (3-4mm)', description: 'Heavy bruxers, TMJ cases' },
 ]
 
+const OCCLUSAL_SCHEMES = [
+  { id: 'flat_plane', label: 'Flat Plane', description: 'Even contact, no guidance' },
+  { id: 'canine_guidance', label: 'Canine Guidance', description: 'Canines disclude posteriors' },
+  { id: 'group_function', label: 'Group Function', description: 'Multiple teeth contact in excursions' },
+]
+
+const RAMP_DESIGNS = [
+  { id: 'none', label: 'No Ramp', description: 'Standard flat anterior' },
+  { id: 'anterior_ramp', label: 'Anterior Ramp', description: 'Guides mandible forward' },
+  { id: 'posterior_discluder', label: 'Posterior Discluder', description: 'Separates back teeth' },
+]
+
+const TMJ_SYMPTOMS = [
+  { id: 'clicking', label: 'Clicking' },
+  { id: 'popping', label: 'Popping' },
+  { id: 'locking', label: 'Locking' },
+  { id: 'pain', label: 'Pain' },
+  { id: 'limited_opening', label: 'Limited Opening' },
+]
+
 export function NightGuardSelector({ nightGuardData, onNightGuardDataChange }: NightGuardSelectorProps) {
+  const toggleTmjSymptom = (symptom: string) => {
+    const current = nightGuardData.tmjSymptoms || []
+    const updated = current.includes(symptom)
+      ? current.filter(s => s !== symptom)
+      : [...current, symptom]
+    onNightGuardDataChange({ tmjSymptoms: updated })
+  }
+
   return (
     <div className="space-y-6">
       {/* Guard Type */}
@@ -167,6 +195,120 @@ export function NightGuardSelector({ nightGuardData, onNightGuardDataChange }: N
         </motion.div>
       )}
 
+      {/* Occlusal Scheme - Only for Hard Splint */}
+      {nightGuardData.guardType === 'hard' && nightGuardData.thickness && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-sm font-medium text-white mb-3">Occlusal Scheme</h3>
+          <div className="space-y-2">
+            {OCCLUSAL_SCHEMES.map((scheme) => (
+              <button
+                key={scheme.id}
+                onClick={() => onNightGuardDataChange({ occlusalScheme: scheme.id as OcclusalScheme })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                  nightGuardData.occlusalScheme === scheme.id
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div>
+                  <p className={cn(
+                    "font-medium text-sm",
+                    nightGuardData.occlusalScheme === scheme.id ? "text-primary" : "text-white"
+                  )}>
+                    {scheme.label}
+                  </p>
+                  <p className="text-[10px] text-white/50">{scheme.description}</p>
+                </div>
+                {nightGuardData.occlusalScheme === scheme.id && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Ramp Design - Only for Hard Splint */}
+      {nightGuardData.guardType === 'hard' && nightGuardData.occlusalScheme && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-sm font-medium text-white mb-3">Anterior Guidance/Ramp</h3>
+          <div className="space-y-2">
+            {RAMP_DESIGNS.map((ramp) => (
+              <button
+                key={ramp.id}
+                onClick={() => onNightGuardDataChange({ rampDesign: ramp.id as RampDesign })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                  nightGuardData.rampDesign === ramp.id
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div>
+                  <p className={cn(
+                    "font-medium text-sm",
+                    nightGuardData.rampDesign === ramp.id ? "text-primary" : "text-white"
+                  )}>
+                    {ramp.label}
+                  </p>
+                  <p className="text-[10px] text-white/50">{ramp.description}</p>
+                </div>
+                {nightGuardData.rampDesign === ramp.id && (
+                  <Check className="w-4 h-4 text-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* TMJ Symptoms */}
+      {nightGuardData.guardType === 'hard' && nightGuardData.thickness && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-sm font-medium text-white mb-3">TMJ Symptoms (if any)</h3>
+          <p className="text-xs text-white/50 mb-3">Select any symptoms the patient is experiencing</p>
+          <div className="flex flex-wrap gap-2">
+            {TMJ_SYMPTOMS.map((symptom) => {
+              const isSelected = nightGuardData.tmjSymptoms?.includes(symptom.id)
+              return (
+                <button
+                  key={symptom.id}
+                  onClick={() => toggleTmjSymptom(symptom.id)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                    isSelected
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      : "bg-white/5 text-white/60 border border-white/10 hover:border-white/20"
+                  )}
+                >
+                  {symptom.label}
+                </button>
+              )
+            })}
+          </div>
+          
+          {nightGuardData.tmjSymptoms && nightGuardData.tmjSymptoms.length > 0 && (
+            <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-white/60">
+                <span className="text-amber-400 font-medium">TMJ case:</span> Consider anterior ramp design 
+                and canine guidance for muscle relaxation.
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Summary */}
       {nightGuardData.guardType && nightGuardData.arch && nightGuardData.thickness && (
         <motion.div
@@ -174,12 +316,36 @@ export function NightGuardSelector({ nightGuardData, onNightGuardDataChange }: N
           animate={{ opacity: 1, y: 0 }}
           className="p-4 bg-selected rounded-xl border border-primary/30"
         >
-          <p className="text-sm font-medium text-primary mb-1">
+          <p className="text-sm font-medium text-primary mb-2">
             {GUARD_TYPES.find(t => t.id === nightGuardData.guardType)?.label}
           </p>
-          <p className="text-xs text-white/60">
-            {nightGuardData.arch === 'upper' ? 'Upper' : 'Lower'} Arch • {THICKNESS_OPTIONS.find(t => t.id === nightGuardData.thickness)?.label}
-          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div>
+              <span className="text-white/50">Arch:</span>
+              <span className="text-white ml-1">{nightGuardData.arch === 'upper' ? 'Upper' : 'Lower'}</span>
+            </div>
+            <div>
+              <span className="text-white/50">Thickness:</span>
+              <span className="text-white ml-1">{THICKNESS_OPTIONS.find(t => t.id === nightGuardData.thickness)?.label}</span>
+            </div>
+            {nightGuardData.occlusalScheme && (
+              <div>
+                <span className="text-white/50">Occlusion:</span>
+                <span className="text-white ml-1">{nightGuardData.occlusalScheme?.replace('_', ' ')}</span>
+              </div>
+            )}
+            {nightGuardData.rampDesign && nightGuardData.rampDesign !== 'none' && (
+              <div>
+                <span className="text-white/50">Ramp:</span>
+                <span className="text-white ml-1">{nightGuardData.rampDesign?.replace('_', ' ')}</span>
+              </div>
+            )}
+          </div>
+          {nightGuardData.tmjSymptoms && nightGuardData.tmjSymptoms.length > 0 && (
+            <p className="text-[10px] text-amber-400 mt-2">
+              TMJ: {nightGuardData.tmjSymptoms.join(', ')}
+            </p>
+          )}
         </motion.div>
       )}
     </div>
