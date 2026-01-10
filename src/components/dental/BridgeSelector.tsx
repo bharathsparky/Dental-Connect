@@ -66,7 +66,6 @@ export function BridgeSelector({
   const [tempStart, setTempStart] = useState<string | null>(bridgeData.startTooth || null)
   const prevSelectionRef = useRef<string[]>([])
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const [colorKey, setColorKey] = useState(0) // Force re-color trigger
 
   // Sync selection step with bridgeData
   useEffect(() => {
@@ -79,87 +78,96 @@ export function BridgeSelector({
     }
   }, [bridgeData.units, bridgeData.startTooth])
 
-  // Helper to set fill/stroke with !important priority
-  const setToothColor = (path: SVGPathElement, fill: string, stroke: string) => {
-    path.style.setProperty('fill', fill, 'important')
-    path.style.setProperty('stroke', stroke, 'important')
-  }
-
-  // Apply custom colors AFTER render using useLayoutEffect
-  useLayoutEffect(() => {
+  // Apply custom colors via DOM - runs after every render
+  const applyColors = useCallback(() => {
     const wrapper = wrapperRef.current
     if (!wrapper) return
 
-    // Small delay to ensure SVG is rendered
-    const timer = setTimeout(() => {
-      const svg = wrapper.querySelector('svg')
-      if (!svg) return
+    const svg = wrapper.querySelector('svg')
+    if (!svg) return
 
-      // Reset ALL teeth to default color first
-      const allGroups = svg.querySelectorAll('g[id^="teeth-"]')
-      allGroups.forEach(group => {
+    // Reset ALL teeth to default color first
+    const allGroups = svg.querySelectorAll('g[id^="teeth-"]')
+    allGroups.forEach(group => {
+      const paths = group.querySelectorAll('path')
+      paths.forEach(path => {
+        (path as SVGPathElement).style.setProperty('fill', '#3d5a7a', 'important')
+        ;(path as SVGPathElement).style.setProperty('stroke', '#5a7a9a', 'important')
+      })
+    })
+
+    // Color temp start (first tooth selected, waiting for second) - Cyan
+    if (tempStart && selectionStep === 'end') {
+      const startGroup = svg.querySelector(`g[id="teeth-${tempStart}"]`)
+      if (startGroup) {
+        const paths = startGroup.querySelectorAll('path')
+        paths.forEach(path => {
+          (path as SVGPathElement).style.setProperty('fill', '#5ebbbd', 'important')
+          ;(path as SVGPathElement).style.setProperty('stroke', '#4aa8aa', 'important')
+        })
+      }
+    }
+
+    // Color abutments - Cyan
+    bridgeData.abutments.forEach(tooth => {
+      const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
+      if (group) {
         const paths = group.querySelectorAll('path')
         paths.forEach(path => {
-          setToothColor(path as SVGPathElement, '#3d5a7a', '#5a7a9a')
+          (path as SVGPathElement).style.setProperty('fill', '#5ebbbd', 'important')
+          ;(path as SVGPathElement).style.setProperty('stroke', '#3d9a9c', 'important')
         })
-      })
-
-      // Color temp start (first tooth selected, waiting for second)
-      if (tempStart && selectionStep === 'end') {
-        const startGroup = svg.querySelector(`g[id="teeth-${tempStart}"]`)
-        if (startGroup) {
-          const paths = startGroup.querySelectorAll('path')
-          paths.forEach(path => {
-            setToothColor(path as SVGPathElement, '#5ebbbd', '#4aa8aa')
-          })
-        }
       }
+    })
 
-      // Color abutments - Cyan
-      bridgeData.abutments.forEach(tooth => {
-        const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
-        if (group) {
-          const paths = group.querySelectorAll('path')
-          paths.forEach(path => {
-            setToothColor(path as SVGPathElement, '#5ebbbd', '#3d9a9c')
-          })
-        }
-      })
+    // Color pontics - Amber  
+    bridgeData.pontics.forEach(tooth => {
+      const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
+      if (group) {
+        const paths = group.querySelectorAll('path')
+        paths.forEach(path => {
+          (path as SVGPathElement).style.setProperty('fill', '#f59e0b', 'important')
+          ;(path as SVGPathElement).style.setProperty('stroke', '#d97706', 'important')
+        })
+      }
+    })
+  }, [bridgeData.abutments, bridgeData.pontics, tempStart, selectionStep])
 
-      // Color pontics - Amber  
-      bridgeData.pontics.forEach(tooth => {
-        const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
-        if (group) {
-          const paths = group.querySelectorAll('path')
-          paths.forEach(path => {
-            setToothColor(path as SVGPathElement, '#f59e0b', '#d97706')
-          })
-        }
-      })
-    }, 100) // Increased delay for SVG render
-
+  // Apply colors after render with a delay
+  useLayoutEffect(() => {
+    const timer = setTimeout(applyColors, 50)
     return () => clearTimeout(timer)
-  }, [bridgeData.abutments, bridgeData.pontics, tempStart, selectionStep, colorKey])
+  }, [applyColors])
 
-  // Handle tooth click from odontogram - same pattern as ToothChart
+  // Handle tooth click - SIMPLIFIED like ToothChart
   const handleChange = useCallback((selections: ToothSelection[]) => {
     const currentSelection = selections.map(s => s.notations.fdi)
     const previousSelection = prevSelectionRef.current
     
-    // Find newly clicked tooth
+    // Find newly added tooth (clicked)
     const addedTeeth = currentSelection.filter(t => !previousSelection.includes(t))
+    // Also check for removed teeth (user clicked same tooth to deselect)
+    const removedTeeth = previousSelection.filter(t => !currentSelection.includes(t))
     
+    // Update ref for next comparison
     prevSelectionRef.current = currentSelection
     
-    if (addedTeeth.length === 0) return
+    // Determine which tooth was clicked
+    let clickedTooth: string | null = null
+    if (addedTeeth.length > 0) {
+      clickedTooth = addedTeeth[0]
+    } else if (removedTeeth.length > 0) {
+      clickedTooth = removedTeeth[0]
+    }
     
-    const clickedTooth = addedTeeth[0]
+    if (!clickedTooth) return
+    
+    console.log('Bridge: Tooth clicked:', clickedTooth, 'Step:', selectionStep)
     
     if (selectionStep === 'start') {
       // First tooth of range
       setTempStart(clickedTooth)
       setSelectionStep('end')
-      setColorKey(k => k + 1) // Trigger re-color
     } else if (selectionStep === 'end' && tempStart) {
       // Second tooth - validate and create range
       const startQuad = Math.floor(parseInt(tempStart) / 10)
@@ -168,39 +176,41 @@ export function BridgeSelector({
       if (startQuad === endQuad) {
         const teethInRange = getTeethInRange(tempStart, clickedTooth)
         if (teethInRange.length >= 3) {
-          // Valid bridge span
+          // Valid bridge span - call parent
           onRangeSelect(tempStart, clickedTooth)
           setSelectionStep('adjust')
-          setColorKey(k => k + 1)
+          // Reset the library's internal selection
+          prevSelectionRef.current = []
         } else {
           // Not enough teeth, restart with new tooth
           setTempStart(clickedTooth)
-          prevSelectionRef.current = [clickedTooth]
-          setColorKey(k => k + 1)
+          prevSelectionRef.current = []
         }
       } else {
-        // Different quadrant, restart
+        // Different quadrant, restart with new tooth
         setTempStart(clickedTooth)
-        prevSelectionRef.current = [clickedTooth]
-        setColorKey(k => k + 1)
+        prevSelectionRef.current = []
       }
     } else if (selectionStep === 'adjust') {
       // Toggle abutment/pontic for existing bridge teeth
       const allBridgeTeeth = [...bridgeData.abutments, ...bridgeData.pontics]
       if (allBridgeTeeth.includes(clickedTooth)) {
         onToggleAbutment(clickedTooth)
-        setColorKey(k => k + 1)
       }
-      prevSelectionRef.current = allBridgeTeeth
+      // Keep library selection in sync with bridge teeth
+      prevSelectionRef.current = []
     }
-  }, [selectionStep, tempStart, bridgeData.abutments, bridgeData.pontics, onRangeSelect, onToggleAbutment])
+    
+    // Re-apply colors after state change
+    setTimeout(applyColors, 100)
+  }, [selectionStep, tempStart, bridgeData.abutments, bridgeData.pontics, onRangeSelect, onToggleAbutment, applyColors])
 
   const handleReset = () => {
     setTempStart(null)
     setSelectionStep('start')
     prevSelectionRef.current = []
     onReset()
-    setColorKey(k => k + 1)
+    setTimeout(applyColors, 100)
   }
 
   const getInstructionText = () => {
@@ -270,7 +280,7 @@ export function BridgeSelector({
           {getInstructionText()}
         </div>
 
-        {/* Odontogram Chart - SAME as ToothChart */}
+        {/* Odontogram Chart */}
         <div className="rounded-2xl p-4 overflow-hidden">
           <div ref={wrapperRef} className="odontogram-wrapper">
             <Odontogram
@@ -308,7 +318,7 @@ export function BridgeSelector({
                 key={tooth}
                 onClick={() => {
                   onToggleAbutment(tooth)
-                  setColorKey(k => k + 1)
+                  setTimeout(applyColors, 100)
                 }}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
@@ -357,7 +367,7 @@ export function BridgeSelector({
         </motion.div>
       )}
 
-      {/* Same styles as ToothChart - uses odontogram-wrapper class */}
+      {/* Styles */}
       <style>{`
         .odontogram-wrapper svg {
           width: 100%;
@@ -383,6 +393,12 @@ export function BridgeSelector({
         
         .odontogram-wrapper svg text {
           display: none !important;
+        }
+        
+        /* Override library's selected state since we handle colors manually */
+        .odontogram-wrapper svg [aria-selected="true"] path,
+        .odontogram-wrapper svg g[aria-selected="true"] path {
+          /* Let our JS handle colors instead */
         }
       `}</style>
     </div>
