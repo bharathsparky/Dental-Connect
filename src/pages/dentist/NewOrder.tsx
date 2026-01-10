@@ -51,10 +51,10 @@ const IMPRESSION_MATERIALS = [
 ]
 
 const CASE_TYPES = [
-  { id: 'crown', label: 'Crown', description: 'Single/multiple tooth restorations', icon: '👑' },
-  { id: 'bridge', label: 'Bridge', description: 'Replace missing teeth with span', icon: '🌉' },
-  { id: 'denture', label: 'Denture', description: 'Full or partial removable prosthesis', icon: '🦷' },
-  { id: 'implant', label: 'Implant', description: 'Implant-supported restoration', icon: '🔩' },
+  { id: 'crown', label: 'Crown', description: 'Single/multiple tooth restorations' },
+  { id: 'bridge', label: 'Bridge', description: 'Replace missing teeth with span' },
+  { id: 'denture', label: 'Denture', description: 'Full or partial removable prosthesis' },
+  { id: 'implant', label: 'Implant', description: 'Implant-supported restoration' },
 ]
 
 const PRIORITIES = [
@@ -401,14 +401,8 @@ export function NewOrder() {
                     )}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                        store.caseType === type.id ? "bg-primary/20" : "bg-white/5"
-                      )}>
-                        {type.icon}
-                      </div>
-                      <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
                         <p className={cn(
                           "font-medium",
                           store.caseType === type.id ? "text-primary" : "text-white"
@@ -486,12 +480,10 @@ export function NewOrder() {
                       )}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className={cn(
-                        "text-2xl mb-2",
+                      <Check className={cn(
+                        "w-6 h-6 mx-auto mb-2",
                         store.hasImpression ? "text-primary" : "text-white/60"
-                      )}>
-                        ✓
-                      </div>
+                      )} />
                       <p className={cn(
                         "font-medium",
                         store.hasImpression ? "text-primary" : "text-white"
@@ -514,7 +506,7 @@ export function NewOrder() {
                       )}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="text-2xl mb-2 text-white/60">✗</div>
+                      <X className="w-6 h-6 mx-auto mb-2 text-white/60" />
                       <p className="font-medium text-white">No</p>
                       <p className="text-xs text-white/50 mt-1">Will take later</p>
                     </motion.button>
