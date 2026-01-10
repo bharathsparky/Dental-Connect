@@ -34,8 +34,10 @@ import { AllOnXSelector } from "@/components/dental/AllOnXSelector"
 import { BleachingTraySelector, SportsGuardSelector, ClearAlignerSelector, ProvisionalSelector } from "@/components/dental/SimpleSelectors"
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
+import { PaymentSelector } from "@/components/payment/PaymentSelector"
 import { useOrderStore } from "@/stores/orderStore"
 import { useModal } from "@/contexts/ModalContext"
+import { formatCurrency, type PaymentMethod, type PaymentTiming } from "@/stores/paymentStore"
 import type { BridgeType, CaseType, ImpressionMaterial } from "@/stores/orderStore"
 import { MOCK_LABS, getLabById } from "@/data/mockLabs"
 import { getMaterialById } from "@/data/materials"
@@ -55,6 +57,7 @@ const STEPS = [
   { id: 7, title: 'Patient Info' },
   { id: 8, title: 'Details' },
   { id: 9, title: 'Review' },
+  { id: 10, title: 'Payment' },
 ]
 
 const IMPRESSION_MATERIALS = [
@@ -135,6 +138,26 @@ export function NewOrder() {
   const [labMaxDelivery, setLabMaxDelivery] = useState<string | null>(null)
   const [showLabFilters, setShowLabFilters] = useState(false)
   const [caseTypeSearch, setCaseTypeSearch] = useState('')
+  
+  // Payment state
+  const [selectedPaymentTiming, setSelectedPaymentTiming] = useState<PaymentTiming | null>(null)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
+  
+  // Estimate order amount (simplified calculation based on case type)
+  const estimatedOrderAmount = (() => {
+    switch (store.caseType) {
+      case 'crown': return 8000
+      case 'bridge': return 15000
+      case 'denture': return 12000
+      case 'implant': return 20000
+      case 'veneer': return 10000
+      case 'inlay_onlay': return 6000
+      case 'full_mouth_rehab': return 50000
+      case 'all_on_x': return 150000
+      case 'surgical_guide': return 25000
+      default: return 5000
+    }
+  })()
 
   // Sync modal state with context
   useEffect(() => {
@@ -373,11 +396,17 @@ export function NewOrder() {
   const handleNextStep = () => {
     if (store.step === 5 && !needsShade()) {
       store.setStep(7) // Skip shade step (6), go to patient info (7)
-    } else if (store.step === 9) {
-      handleSubmit()
+    } else if (store.step === 10) {
+      handleSubmit() // Payment step - place order
     } else {
       store.nextStep()
     }
+  }
+
+  // Handle payment selection
+  const handlePaymentSelected = (timing: PaymentTiming, method: PaymentMethod) => {
+    setSelectedPaymentTiming(timing)
+    setSelectedPaymentMethod(method)
   }
 
   // Handle previous step - skip shade if not needed
@@ -435,7 +464,7 @@ export function NewOrder() {
   }
 
   // Get current total steps (accounting for skipped shade)
-  const totalSteps = needsShade() ? 9 : 8
+  const totalSteps = needsShade() ? 10 : 9
   const displayStep = !needsShade() && store.step > 6 ? store.step - 1 : store.step
 
   return (
@@ -1680,11 +1709,20 @@ export function NewOrder() {
                   <CardContent className="p-4 pt-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-white/70">Estimated Total</span>
-                      <span className="text-xl font-semibold text-white">₹8,000 - ₹12,000</span>
+                      <span className="text-xl font-semibold text-white">{formatCurrency(estimatedOrderAmount)}</span>
                     </div>
                   </CardContent>
                 </Card>
               </div>
+            )}
+
+            {/* Step 10: Payment */}
+            {store.step === 10 && store.labId && (
+              <PaymentSelector
+                labId={store.labId}
+                orderAmount={estimatedOrderAmount}
+                onPaymentSelected={handlePaymentSelected}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -1692,14 +1730,29 @@ export function NewOrder() {
 
       {/* Footer */}
       <div className="bg-gradient-to-t from-background to-background/80 p-5 z-40">
-        <Button
-          className="w-full"
-          disabled={!canProceed()}
-          onClick={handleNextStep}
-        >
-          {store.step === 9 ? 'Place Order' : 'Continue'}
-          {store.step !== 9 && <ChevronRight className="w-4 h-4" />}
-        </Button>
+        {store.step === 10 ? (
+          <Button
+            className="w-full"
+            disabled={!selectedPaymentTiming || !selectedPaymentMethod}
+            onClick={handleNextStep}
+          >
+            {selectedPaymentTiming === 'credit' 
+              ? 'Place Order & Add to Bill'
+              : selectedPaymentTiming === 'on_delivery'
+                ? 'Place Order (Pay on Delivery)'
+                : `Pay ${formatCurrency(estimatedOrderAmount)} & Place Order`
+            }
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            disabled={!canProceed()}
+            onClick={handleNextStep}
+          >
+            {store.step === 9 ? 'Continue to Payment' : 'Continue'}
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </div>
   )
