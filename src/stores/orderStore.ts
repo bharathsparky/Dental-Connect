@@ -198,6 +198,14 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     bridgeData: { ...state.bridgeData, ...data }
   })),
   setBridgeRange: (start, end) => {
+    // Handle reset case
+    if (!start || !end) {
+      set(() => ({
+        bridgeData: { ...initialBridgeData }
+      }))
+      return
+    }
+    
     const teethInRange = getTeethInRange(start, end)
     set((state) => ({
       bridgeData: {
