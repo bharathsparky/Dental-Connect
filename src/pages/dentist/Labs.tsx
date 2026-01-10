@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { useNavigate } from "react-router-dom"
 import { Search, SlidersHorizontal, MapPin, X, Star, Clock, BadgeCheck } from "lucide-react"
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { MOCK_LABS } from "@/data/mockLabs"
+import { useModal } from "@/contexts/ModalContext"
 import { cn } from "@/lib/utils"
 
 const LAB_SERVICE_FILTERS = [
@@ -39,12 +40,18 @@ const LAB_DELIVERY_OPTIONS = [
 
 export function Labs() {
   const navigate = useNavigate()
+  const { setModalOpen } = useModal()
   const [searchQuery, setSearchQuery] = useState('')
   const [showLabFilters, setShowLabFilters] = useState(false)
   const [labServiceFilter, setLabServiceFilter] = useState<string[]>([])
   const [labSortBy, setLabSortBy] = useState('rating')
   const [labMinRating, setLabMinRating] = useState<number | null>(null)
   const [labMaxDelivery, setLabMaxDelivery] = useState<string | null>(null)
+
+  // Sync modal state with context
+  useEffect(() => {
+    setModalOpen(showLabFilters)
+  }, [showLabFilters, setModalOpen])
 
   // Filter and sort labs
   const filteredLabs = useMemo(() => {

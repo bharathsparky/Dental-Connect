@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { useNavigate } from "react-router-dom"
 import { 
@@ -35,6 +35,7 @@ import { BleachingTraySelector, SportsGuardSelector, ClearAlignerSelector, Provi
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
 import { useOrderStore } from "@/stores/orderStore"
+import { useModal } from "@/contexts/ModalContext"
 import type { BridgeType, CaseType, ImpressionMaterial } from "@/stores/orderStore"
 import { MOCK_LABS, getLabById } from "@/data/mockLabs"
 import { getMaterialById } from "@/data/materials"
@@ -125,6 +126,7 @@ const NO_SHADE_CASE_TYPES: CaseType[] = ['night_guard', 'retainer', 'waxup', 'su
 export function NewOrder() {
   const navigate = useNavigate()
   const store = useOrderStore()
+  const { setModalOpen } = useModal()
   const [showSuccess, setShowSuccess] = useState(false)
   const [labSearch, setLabSearch] = useState('')
   const [labServiceFilter, setLabServiceFilter] = useState<string[]>([])
@@ -133,6 +135,11 @@ export function NewOrder() {
   const [labMaxDelivery, setLabMaxDelivery] = useState<string | null>(null)
   const [showLabFilters, setShowLabFilters] = useState(false)
   const [caseTypeSearch, setCaseTypeSearch] = useState('')
+
+  // Sync modal state with context
+  useEffect(() => {
+    setModalOpen(showLabFilters)
+  }, [showLabFilters, setModalOpen])
 
   // Auto-advance handlers for single-selection screens
   const handleLabSelect = (labId: string) => {
