@@ -86,14 +86,23 @@ export function BridgeSelector({
     const svg = wrapper.querySelector('svg')
     if (!svg) return
 
-    // Debug: log all group IDs in the SVG
-    const allGroupsDebug = svg.querySelectorAll('g[id]')
-    if (allGroupsDebug.length > 0) {
-      console.log('SVG group IDs found:', Array.from(allGroupsDebug).slice(0, 10).map(g => g.id))
-    }
+    // Debug: log ALL elements with IDs in the SVG
+    const allElements = svg.querySelectorAll('[id]')
+    console.log('All SVG elements with IDs:', Array.from(allElements).map(el => ({ tag: el.tagName, id: el.id })).slice(0, 20))
+    
+    // Also check for data attributes
+    const allGroups = svg.querySelectorAll('g')
+    console.log('All g elements:', allGroups.length, 'First few:', Array.from(allGroups).slice(0, 5).map(g => ({ id: g.id, class: g.className, 'data-tooth': g.getAttribute('data-tooth') })))
 
-    // Reset ALL teeth to default color first
-    const allGroups = svg.querySelectorAll('g[id^="teeth-"]')
+    // Reset ALL teeth to default color first - try multiple selectors
+    let toothElements = svg.querySelectorAll('g[id^="teeth-"]')
+    if (toothElements.length === 0) {
+      toothElements = svg.querySelectorAll('g[data-tooth]')
+    }
+    if (toothElements.length === 0) {
+      toothElements = svg.querySelectorAll('g[class*="tooth"]')
+    }
+    console.log('Tooth elements found:', toothElements.length)
     allGroups.forEach(group => {
       const paths = group.querySelectorAll('path')
       paths.forEach(path => {
