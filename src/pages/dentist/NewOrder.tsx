@@ -176,7 +176,7 @@ export function NewOrder() {
                 const matchesSearch = lab.name.toLowerCase().includes(labSearch.toLowerCase()) ||
                   lab.address.toLowerCase().includes(labSearch.toLowerCase())
                 const matchesService = labServiceFilter === 'All' ||
-                  lab.services.some(s => s.name.toLowerCase() === labServiceFilter.toLowerCase())
+                  lab.services.some(s => s.toLowerCase() === labServiceFilter.toLowerCase())
                 return matchesSearch && matchesService
               })
               
