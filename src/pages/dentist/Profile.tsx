@@ -1,4 +1,5 @@
 import { motion } from "motion/react"
+import { useNavigate } from "react-router-dom"
 import { 
   User, 
   Building2, 
@@ -8,36 +9,53 @@ import {
   HelpCircle,
   ChevronRight,
   LogOut,
-  Settings
+  Settings,
+  Wallet,
+  FileText,
+  IndianRupee
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { usePaymentStore, formatCurrency } from "@/stores/paymentStore"
 
 const MENU_ITEMS = [
   { 
     section: 'Account',
     items: [
-      { icon: User, label: 'Personal Details' },
-      { icon: Building2, label: 'Clinic Details' },
-      { icon: CreditCard, label: 'Payment Methods' },
+      { icon: User, label: 'Personal Details', path: null },
+      { icon: Building2, label: 'Clinic Details', path: null },
+      { icon: CreditCard, label: 'Payment Methods', path: null },
+    ]
+  },
+  {
+    section: 'Payments',
+    items: [
+      { icon: Wallet, label: 'Wallet', path: '/wallet' },
+      { icon: FileText, label: 'Billing & Statements', path: '/billing' },
     ]
   },
   {
     section: 'Preferences',
     items: [
-      { icon: Bell, label: 'Notifications' },
-      { icon: Shield, label: 'Privacy & Security' },
+      { icon: Bell, label: 'Notifications', path: null },
+      { icon: Shield, label: 'Privacy & Security', path: null },
     ]
   },
   {
     section: 'Support',
     items: [
-      { icon: HelpCircle, label: 'Help & Support' },
+      { icon: HelpCircle, label: 'Help & Support', path: null },
     ]
   },
 ]
 
 export function Profile() {
+  const navigate = useNavigate()
+  const { wallet, creditStatuses } = usePaymentStore()
+  
+  // Calculate total outstanding
+  const totalOutstanding = creditStatuses.reduce((sum, cs) => sum + cs.currentOutstanding, 0)
+
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
       <div className="flex-1 px-5 pt-2 pb-4 space-y-5">
@@ -65,11 +83,51 @@ export function Profile() {
           </Card>
         </motion.div>
 
-        {/* Stats */}
+        {/* Quick Access - Wallet & Billing */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <Card 
+              variant="gradient"
+              className="cursor-pointer hover:border-primary/50 transition-all"
+              onClick={() => navigate('/wallet')}
+            >
+              <CardContent className="p-4 pt-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <span className="text-sm font-medium text-white">Wallet</span>
+                </div>
+                <p className="text-lg font-bold text-emerald-400">{formatCurrency(wallet.balance)}</p>
+              </CardContent>
+            </Card>
+            <Card 
+              variant="gradient"
+              className="cursor-pointer hover:border-primary/50 transition-all"
+              onClick={() => navigate('/billing')}
+            >
+              <CardContent className="p-4 pt-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                    <IndianRupee className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <span className="text-sm font-medium text-white">Due</span>
+                </div>
+                <p className="text-lg font-bold text-amber-400">{formatCurrency(totalOutstanding)}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
+
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
         >
           <Card variant="gradient">
             <CardContent className="p-4 pt-4">
@@ -95,7 +153,7 @@ export function Profile() {
             key={section.section}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 + sectionIndex * 0.05 }}
+            transition={{ delay: 0.2 + sectionIndex * 0.05 }}
           >
             <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2 px-1">
               {section.section}
@@ -105,6 +163,7 @@ export function Profile() {
                 {section.items.map((item) => (
                   <button
                     key={item.label}
+                    onClick={() => item.path && navigate(item.path)}
                     className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/5 transition-colors"
                   >
                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">

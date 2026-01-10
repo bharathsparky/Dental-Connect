@@ -11,6 +11,8 @@ import { Profile } from "./pages/dentist/Profile"
 import { NewOrder } from "./pages/dentist/NewOrder"
 import { OrderDetail } from "./pages/dentist/OrderDetail"
 import { LabProfile } from "./pages/dentist/LabProfile"
+import { Wallet } from "./pages/dentist/Wallet"
+import { Billing } from "./pages/dentist/Billing"
 
 function AppContent() {
   const location = useLocation()
@@ -21,6 +23,8 @@ function AppContent() {
     location.pathname.startsWith('/new-order') ||
     location.pathname.startsWith('/orders/') ||
     location.pathname.startsWith('/labs/') ||
+    location.pathname.startsWith('/wallet') ||
+    location.pathname.startsWith('/billing') ||
     isModalOpen
 
   return (
@@ -33,6 +37,8 @@ function AppContent() {
         <Route path="/orders/:id" element={<OrderDetail />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/new-order" element={<NewOrder />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/billing" element={<Billing />} />
       </Routes>
       {!hideBottomNav && <BottomNav />}
     </div>

@@ -978,6 +978,9 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
 }))
 
 // Mock orders for demonstration
+export type OrderPaymentStatus = 'pending' | 'deposit_paid' | 'paid' | 'credit'
+export type OrderPaymentTiming = 'prepaid' | 'on_delivery' | 'credit'
+
 export interface Order {
   id: string
   labId: string
@@ -994,6 +997,12 @@ export interface Order {
   totalAmount: number
   instructions?: string
   patientName?: string
+  // Payment fields
+  paymentStatus: OrderPaymentStatus
+  paymentTiming: OrderPaymentTiming
+  depositAmount?: number
+  depositPaid?: boolean
+  balanceAmount?: number
 }
 
 export const MOCK_ORDERS: Order[] = [
@@ -1013,6 +1022,8 @@ export const MOCK_ORDERS: Order[] = [
     totalAmount: 18000,
     patientName: 'Rajesh Kumar',
     instructions: 'Patient has slight crowding. Please ensure tight contact with adjacent teeth. Match shade with upper central incisors.',
+    paymentStatus: 'credit',
+    paymentTiming: 'credit',
   },
   {
     id: 'ORD-2024-002',
@@ -1030,6 +1041,8 @@ export const MOCK_ORDERS: Order[] = [
     totalAmount: 25000,
     patientName: 'Anita Sharma',
     instructions: 'Ridge lap pontic design preferred. Abutments have minimal prep - please check for adequate clearance.',
+    paymentStatus: 'paid',
+    paymentTiming: 'prepaid',
   },
   {
     id: 'ORD-2024-003',
@@ -1045,5 +1058,10 @@ export const MOCK_ORDERS: Order[] = [
     estimatedDelivery: new Date('2024-01-18'),
     priority: 'normal',
     totalAmount: 10000,
+    paymentStatus: 'deposit_paid',
+    paymentTiming: 'on_delivery',
+    depositAmount: 3000,
+    depositPaid: true,
+    balanceAmount: 7000,
   },
 ]
