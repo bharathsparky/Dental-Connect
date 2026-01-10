@@ -15,7 +15,7 @@ const DENTURE_TYPES = [
   { id: 'partial', label: 'Partial Denture', description: 'Removable partial for some missing teeth' },
   { id: 'immediate', label: 'Immediate Denture', description: 'Placed immediately after extraction' },
   { id: 'overdenture', label: 'Overdenture', description: 'Implant-retained removable prosthesis' },
-  { id: 'obturator', label: 'Obturator', description: 'Prosthesis to close palatal defect' },
+  { id: 'obturator', label: 'Obturator', description: 'Maxillary prosthesis for palatal defects' },
 ]
 
 const DENTURE_STAGES = [
@@ -494,7 +494,7 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
         </motion.div>
       )}
 
-      {/* Obturator */}
+      {/* Obturator - Maxillary only */}
       {dentureData.dentureType === 'obturator' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -504,48 +504,46 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
           <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
             <p className="text-sm text-amber-400 font-medium mb-1">Obturator Prosthesis</p>
             <p className="text-xs text-white/60">
-              Used to close palatal defects (post-maxillectomy, cleft palate). 
-              Please provide defect details in the notes section.
+              Used to close palatal/maxillary defects (post-maxillectomy, cleft palate, trauma). 
+              Obturators are specifically designed for the upper jaw to separate the oral and nasal cavities.
             </p>
           </div>
           
+          {/* Auto-select maxillary for obturators */}
           <div>
             <h3 className="text-sm font-medium text-white mb-3">Defect Location</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => onDentureDataChange({ arch: 'upper' })}
-                className={cn(
-                  "p-4 rounded-xl border transition-all text-center",
-                  dentureData.arch === 'upper'
-                    ? "bg-selected border-primary/50"
-                    : "bg-card border-border/50 hover:border-white/20"
+            <button
+              onClick={() => onDentureDataChange({ arch: 'upper' })}
+              className={cn(
+                "w-full p-4 rounded-xl border transition-all text-left",
+                dentureData.arch === 'upper'
+                  ? "bg-selected border-primary/50"
+                  : "bg-card border-border/50 hover:border-white/20"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn(
+                    "font-medium text-sm mb-1",
+                    dentureData.arch === 'upper' ? "text-primary" : "text-white"
+                  )}>
+                    Maxillary (Upper Jaw)
+                  </p>
+                  <p className="text-[10px] text-white/50">Hard palate, soft palate, or combined defect</p>
+                </div>
+                {dentureData.arch === 'upper' && (
+                  <Check className="w-5 h-5 text-primary" />
                 )}
-              >
-                <p className={cn(
-                  "font-medium text-sm mb-1",
-                  dentureData.arch === 'upper' ? "text-primary" : "text-white"
-                )}>
-                  Maxillary
+              </div>
+            </button>
+            
+            <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex gap-2">
+                <Info className="w-4 h-4 text-white/40 flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-white/50">
+                  <span className="text-white/70 font-medium">Note:</span> Mandibular defects are typically managed with reconstruction plates, bone grafts, or mandibular guide flange prostheses rather than obturators.
                 </p>
-                <p className="text-[10px] text-white/50">Hard/soft palate</p>
-              </button>
-              <button
-                onClick={() => onDentureDataChange({ arch: 'lower' })}
-                className={cn(
-                  "p-4 rounded-xl border transition-all text-center",
-                  dentureData.arch === 'lower'
-                    ? "bg-selected border-primary/50"
-                    : "bg-card border-border/50 hover:border-white/20"
-                )}
-              >
-                <p className={cn(
-                  "font-medium text-sm mb-1",
-                  dentureData.arch === 'lower' ? "text-primary" : "text-white"
-                )}>
-                  Mandibular
-                </p>
-                <p className="text-[10px] text-white/50">Floor of mouth</p>
-              </button>
+              </div>
             </div>
           </div>
         </motion.div>
