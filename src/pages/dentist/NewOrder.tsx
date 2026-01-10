@@ -27,6 +27,7 @@ import { InlayOnlaySelector } from "@/components/dental/InlayOnlaySelector"
 import { NightGuardSelector } from "@/components/dental/NightGuardSelector"
 import { RetainerSelector } from "@/components/dental/RetainerSelector"
 import { WaxupSelector } from "@/components/dental/WaxupSelector"
+import { FullMouthRehabSelector } from "@/components/dental/FullMouthRehabSelector"
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
 import { useOrderStore } from "@/stores/orderStore"
@@ -70,8 +71,9 @@ const CASE_TYPES: { id: CaseType, label: string, description: string, category: 
   // Appliances
   { id: 'night_guard', label: 'Night Guard', description: 'Bruxism / TMJ protection', category: 'appliance' },
   { id: 'retainer', label: 'Retainer', description: 'Orthodontic retention', category: 'appliance' },
-  // Diagnostic
+  // Diagnostic & Complex
   { id: 'waxup', label: 'Wax-Up / Study', description: 'Diagnostic planning & visualization', category: 'diagnostic' },
+  { id: 'full_mouth_rehab', label: 'Full Mouth Rehab', description: 'Comprehensive restoration', category: 'restoration' },
 ]
 
 const PRIORITIES = [
@@ -152,6 +154,12 @@ export function NewOrder() {
             return !!store.retainerData.retainerType && !!store.retainerData.arch
           case 'waxup':
             return !!store.waxupData.purpose && (store.waxupData.selectedTeeth?.length || 0) > 0
+          case 'full_mouth_rehab':
+            return !!store.fmrData.stage && 
+                   !!store.fmrData.ovdChange &&
+                   !!store.fmrData.treatmentApproach &&
+                   !!store.fmrData.guideplane &&
+                   ((store.fmrData.upperTeeth?.length || 0) > 0 || (store.fmrData.lowerTeeth?.length || 0) > 0)
           default: return false
         }
       case 4: return store.hasImpression && !!store.impressionMaterial
@@ -232,6 +240,9 @@ export function NewOrder() {
         return store.retainerData.arch === 'both' ? 'Both arches' : `${store.retainerData.arch} arch`
       case 'waxup':
         return store.waxupData.selectedTeeth?.join(', ') || '-'
+      case 'full_mouth_rehab':
+        const fmrTotal = (store.fmrData.upperTeeth?.length || 0) + (store.fmrData.lowerTeeth?.length || 0)
+        return `${fmrTotal} teeth - ${store.fmrData.stage?.replace('_', ' ')}`
       default:
         return '-'
     }
@@ -635,6 +646,14 @@ export function NewOrder() {
                   <WaxupSelector
                     waxupData={store.waxupData}
                     onWaxupDataChange={store.setWaxupData}
+                  />
+                )}
+
+                {/* Full Mouth Rehabilitation */}
+                {store.caseType === 'full_mouth_rehab' && (
+                  <FullMouthRehabSelector
+                    fmrData={store.fmrData}
+                    onFMRDataChange={store.setFMRData}
                   />
                 )}
               </div>

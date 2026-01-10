@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup' | null
+export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup' | 'full_mouth_rehab' | null
 export type Priority = 'normal' | 'urgent' | 'rush'
 export type ImpressionMaterial = 'alginate' | 'pvs' | 'polyether' | 'digital_scan' | null
 export type DentureType = 'full' | 'partial' | 'immediate' | 'overdenture' | 'obturator' | null
@@ -131,6 +131,37 @@ export interface WaxupData {
   selectedTeeth: string[]
 }
 
+// Full Mouth Rehabilitation data
+export type FMRStage = 'diagnostic' | 'provisionals' | 'final_upper' | 'final_lower' | 'final_both' | null
+export type OVDChange = 'maintain' | 'increase_1_2mm' | 'increase_2_4mm' | 'increase_4plus' | null
+export type TreatmentApproach = 'segmented' | 'full_arch' | 'quadrant' | null
+
+export interface FMRData {
+  stage: FMRStage
+  ovdChange: OVDChange
+  currentOVD: string | null  // mm measurement
+  proposedOVD: string | null  // mm measurement
+  treatmentApproach: TreatmentApproach
+  
+  // Diagnostic records
+  hasFacebowRecord: boolean
+  hasCRRecord: boolean  // Centric Relation
+  hasDiagnosticWaxup: boolean
+  
+  // Treatment plan
+  upperArchPlan: string[]  // Array of restoration types: crown, bridge, implant, veneer
+  lowerArchPlan: string[]
+  
+  // Teeth involved
+  upperTeeth: string[]
+  lowerTeeth: string[]
+  
+  // Special considerations
+  guideplane: 'anterior' | 'canine' | 'group_function' | null
+  smileDesign: boolean
+  deprogrammer: boolean  // Anterior deprogrammer used?
+}
+
 export interface OrderFormState {
   step: number
   labId: string | null
@@ -168,6 +199,9 @@ export interface OrderFormState {
   
   // Wax-up-specific
   waxupData: WaxupData
+  
+  // Full Mouth Rehab-specific
+  fmrData: FMRData
   
   // Impression & Material
   hasImpression: boolean
@@ -223,6 +257,9 @@ export interface OrderFormState {
   
   // Wax-up actions
   setWaxupData: (data: Partial<WaxupData>) => void
+  
+  // FMR actions
+  setFMRData: (data: Partial<FMRData>) => void
   
   setHasImpression: (hasImpression: boolean) => void
   setImpressionMaterial: (material: ImpressionMaterial) => void
@@ -332,6 +369,24 @@ const initialWaxupData: WaxupData = {
   selectedTeeth: [],
 }
 
+const initialFMRData: FMRData = {
+  stage: null,
+  ovdChange: null,
+  currentOVD: null,
+  proposedOVD: null,
+  treatmentApproach: null,
+  hasFacebowRecord: false,
+  hasCRRecord: false,
+  hasDiagnosticWaxup: false,
+  upperArchPlan: [],
+  lowerArchPlan: [],
+  upperTeeth: [],
+  lowerTeeth: [],
+  guideplane: null,
+  smileDesign: false,
+  deprogrammer: false,
+}
+
 const initialState = {
   step: 1,
   labId: null,
@@ -349,6 +404,7 @@ const initialState = {
   nightGuardData: { ...initialNightGuardData },
   retainerData: { ...initialRetainerData },
   waxupData: { ...initialWaxupData },
+  fmrData: { ...initialFMRData },
   hasImpression: false,
   impressionMaterial: null as ImpressionMaterial,
   hasBiteRegistration: false,
@@ -410,6 +466,7 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     nightGuardData: { ...initialNightGuardData },
     retainerData: { ...initialRetainerData },
     waxupData: { ...initialWaxupData },
+    fmrData: { ...initialFMRData },
   }),
   setPatientInfo: (patientName, patientAge, patientGender) => set({ 
     patientName, 
@@ -525,6 +582,11 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     waxupData: { ...state.waxupData, ...data }
   })),
   
+  // FMR actions
+  setFMRData: (data) => set((state) => ({
+    fmrData: { ...state.fmrData, ...data }
+  })),
+  
   setHasImpression: (hasImpression) => set({ hasImpression }),
   setImpressionMaterial: (impressionMaterial) => set({ impressionMaterial }),
   setHasBiteRegistration: (hasBiteRegistration) => set({ hasBiteRegistration }),
@@ -550,6 +612,7 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     nightGuardData: { ...initialNightGuardData },
     retainerData: { ...initialRetainerData },
     waxupData: { ...initialWaxupData },
+    fmrData: { ...initialFMRData },
   }),
   
   // Helper to get display summary
@@ -598,6 +661,11 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
         return state.waxupData.selectedTeeth.length > 0
           ? `${state.waxupData.purpose || ''}: ${state.waxupData.selectedTeeth.sort().join(', ')}`
           : 'Not configured'
+      case 'full_mouth_rehab':
+        const totalTeeth = (state.fmrData.upperTeeth?.length || 0) + (state.fmrData.lowerTeeth?.length || 0)
+        return totalTeeth > 0
+          ? `FMR: ${totalTeeth} teeth, ${state.fmrData.stage || 'planning'}`
+          : 'Full Mouth Rehabilitation'
       default:
         return ''
     }
