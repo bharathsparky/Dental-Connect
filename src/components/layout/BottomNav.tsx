@@ -14,7 +14,7 @@ export function BottomNav() {
   const navigate = useNavigate()
 
   return (
-    <nav className="bg-gradient-to-t from-background via-background to-background/80 pt-2 pb-2">
+    <nav className="sticky bottom-0 z-50 bg-gradient-to-t from-background via-background to-background/80 pt-2 pb-2">
       <div className="flex items-center justify-around h-16 mx-4 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path

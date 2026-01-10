@@ -19,18 +19,16 @@ function AppContent() {
     location.pathname.startsWith('/labs/')
 
   return (
-    <div className="flex flex-col min-h-full">
-      <div className="flex-1">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/labs" element={<Labs />} />
-          <Route path="/labs/:id" element={<LabProfile />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/orders/:id" element={<OrderDetail />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/new-order" element={<NewOrder />} />
-        </Routes>
-      </div>
+    <div className="min-h-full">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/labs" element={<Labs />} />
+        <Route path="/labs/:id" element={<LabProfile />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/:id" element={<OrderDetail />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/new-order" element={<NewOrder />} />
+      </Routes>
       {!hideBottomNav && <BottomNav />}
     </div>
   )
