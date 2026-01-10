@@ -17,11 +17,11 @@ const BRIDGE_TYPES = [
   { id: 'maryland', label: 'Maryland', description: 'Wings bonded to adjacent teeth' },
 ]
 
-// FDI notation teeth layout
-const UPPER_RIGHT = ['18', '17', '16', '15', '14', '13', '12', '11']
-const UPPER_LEFT = ['21', '22', '23', '24', '25', '26', '27', '28']
-const LOWER_LEFT = ['31', '32', '33', '34', '35', '36', '37', '38']
-const LOWER_RIGHT = ['48', '47', '46', '45', '44', '43', '42', '41']
+// FDI notation teeth layout - displayed as shown from patient's perspective
+// Upper Right (Q1): 18-11 from right to left, Upper Left (Q2): 21-28 from left to right
+const UPPER_TEETH = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28']
+// Lower Left (Q3): 38-31 from left to right, Lower Right (Q4): 41-48 from right to left
+const LOWER_TEETH = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38']
 
 // Get all teeth in a range (same quadrant)
 function getTeethInRange(start: string, end: string): string[] {
@@ -92,7 +92,6 @@ export function BridgeSelector({
   const resetSelection = () => {
     setTempStart(null)
     setSelectionStep('start')
-    // Parent should handle resetting bridgeData
     onRangeSelect('', '') // Signal reset
   }
 
@@ -109,9 +108,9 @@ export function BridgeSelector({
       case 'start':
         return 'Tap the FIRST tooth of the bridge span'
       case 'end':
-        return `Start: ${tempStart} → Now tap the LAST tooth (min 3 teeth)`
+        return `Start: ${tempStart} → Now tap the LAST tooth (min 3)`
       case 'adjust':
-        return 'Tap teeth in the bridge to toggle Abutment ↔ Pontic'
+        return 'Tap teeth to toggle Abutment ↔ Pontic'
     }
   }
 
@@ -121,68 +120,63 @@ export function BridgeSelector({
     const pontic = isPontic(tooth)
     const isStart = isStartSelection(tooth)
     
-    // Tooth shape path - more realistic tooth outline
-    const toothPath = isUpper
-      ? "M4 0 L20 0 Q24 4 24 12 L22 28 Q20 32 12 32 Q4 32 2 28 L0 12 Q0 4 4 0"
-      : "M4 32 L20 32 Q24 28 24 20 L22 4 Q20 0 12 0 Q4 0 2 4 L0 20 Q0 28 4 32"
-    
     return (
       <button
         key={tooth}
         onClick={() => handleToothClick(tooth)}
-        className="relative group focus:outline-none"
-        title={tooth}
+        className="relative group focus:outline-none flex flex-col items-center"
+        title={`Tooth ${tooth}`}
       >
-        <svg 
-          width="28" 
-          height="36" 
-          viewBox="0 0 24 32" 
-          className="transition-all duration-200"
-        >
-          <path
-            d={toothPath}
-            className={cn(
-              "transition-all duration-200",
-              inRange
-                ? abutment 
-                  ? "fill-primary stroke-primary/80"
-                  : "fill-amber-500 stroke-amber-400"
-                : isStart
-                  ? "fill-primary/60 stroke-primary"
-                  : "fill-slate-700 stroke-slate-500 group-hover:fill-slate-600"
-            )}
-            strokeWidth="1.5"
-          />
-        </svg>
-        
-        {/* Tooth number */}
-        <span className={cn(
-          "absolute inset-0 flex items-center justify-center text-[9px] font-medium pointer-events-none",
-          inRange ? "text-white" : isStart ? "text-white" : "text-white/60"
-        )}>
-          {tooth.slice(-1)}
-        </span>
-        
-        {/* Abutment/Pontic indicator */}
-        {abutment && (
-          <div className="absolute -top-1 -right-0.5 w-3.5 h-3.5 bg-primary-foreground rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-[7px] text-primary font-bold">A</span>
-          </div>
+        {/* Tooth number on top for upper, bottom for lower */}
+        {isUpper && (
+          <span className={cn(
+            "text-[8px] font-medium mb-0.5 leading-none",
+            inRange ? (abutment ? "text-primary" : "text-amber-400") : isStart ? "text-primary" : "text-white/40"
+          )}>
+            {tooth}
+          </span>
         )}
-        {pontic && (
-          <div className="absolute -top-1 -right-0.5 w-3.5 h-3.5 bg-amber-100 rounded-full flex items-center justify-center shadow-sm">
-            <span className="text-[7px] text-amber-700 font-bold">P</span>
-          </div>
+        
+        {/* Tooth shape */}
+        <div
+          className={cn(
+            "w-4 h-5 rounded-sm transition-all duration-200 flex items-center justify-center",
+            inRange
+              ? abutment 
+                ? "bg-primary border border-primary/80"
+                : "bg-amber-500 border border-amber-400"
+              : isStart
+                ? "bg-primary/60 border border-primary"
+                : "bg-slate-700 border border-slate-500 group-hover:bg-slate-600"
+          )}
+        >
+          {/* A/P indicator inside tooth */}
+          {abutment && (
+            <span className="text-[7px] text-white font-bold">A</span>
+          )}
+          {pontic && (
+            <span className="text-[7px] text-white font-bold">P</span>
+          )}
+        </div>
+        
+        {/* Tooth number on bottom for lower */}
+        {!isUpper && (
+          <span className={cn(
+            "text-[8px] font-medium mt-0.5 leading-none",
+            inRange ? (abutment ? "text-primary" : "text-amber-400") : isStart ? "text-primary" : "text-white/40"
+          )}>
+            {tooth}
+          </span>
         )}
       </button>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Bridge Type Selection */}
       <div>
-        <h3 className="text-sm font-medium text-white mb-3">Bridge Type</h3>
+        <h3 className="text-sm font-medium text-white mb-2">Bridge Type</h3>
         <div className="space-y-2">
           {BRIDGE_TYPES.map((type) => (
             <button
@@ -214,7 +208,7 @@ export function BridgeSelector({
 
       {/* Bridge Span Selection */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-white">Select Bridge Span</h3>
           {(tempStart || bridgeData.units > 0) && (
             <button 
@@ -228,55 +222,47 @@ export function BridgeSelector({
         </div>
         
         <div className={cn(
-          "text-xs mb-4 px-3 py-2 rounded-lg",
+          "text-xs mb-3 px-3 py-2 rounded-lg",
           selectionStep === 'adjust' ? "bg-primary/10 text-primary" : "bg-white/5 text-white/60"
         )}>
           {getInstructionText()}
         </div>
 
-        {/* Dental Chart */}
-        <div className="bg-card/50 rounded-2xl p-4 border border-border/30">
+        {/* Dental Chart - Compact Layout */}
+        <div className="bg-card/50 rounded-xl p-3 border border-border/30 overflow-hidden">
           {/* Upper Arch */}
-          <div className="text-center mb-4">
-            <p className="text-[10px] text-white/40 uppercase tracking-wider mb-3">Upper Arch</p>
-            <div className="flex justify-center items-end gap-0.5">
-              <div className="flex gap-0.5">
-                {UPPER_RIGHT.map(tooth => renderTooth(tooth, true))}
-              </div>
-              <div className="w-3 h-8 border-l border-r border-white/10 mx-1" />
-              <div className="flex gap-0.5">
-                {UPPER_LEFT.map(tooth => renderTooth(tooth, true))}
-              </div>
+          <div className="mb-3">
+            <p className="text-[9px] text-white/30 uppercase tracking-wider text-center mb-2">Upper</p>
+            <div className="flex justify-center gap-px">
+              {UPPER_TEETH.slice(0, 8).map((tooth) => renderTooth(tooth, true))}
+              <div className="w-2 mx-0.5 border-l border-white/10" />
+              {UPPER_TEETH.slice(8).map((tooth) => renderTooth(tooth, true))}
             </div>
           </div>
           
           {/* Divider */}
-          <div className="border-t border-white/10 my-4" />
+          <div className="border-t border-dashed border-white/10 my-2" />
           
           {/* Lower Arch */}
-          <div className="text-center">
-            <div className="flex justify-center items-start gap-0.5">
-              <div className="flex gap-0.5">
-                {LOWER_LEFT.map(tooth => renderTooth(tooth, false))}
-              </div>
-              <div className="w-3 h-8 border-l border-r border-white/10 mx-1" />
-              <div className="flex gap-0.5">
-                {LOWER_RIGHT.map(tooth => renderTooth(tooth, false))}
-              </div>
+          <div>
+            <div className="flex justify-center gap-px">
+              {LOWER_TEETH.slice(0, 8).map((tooth) => renderTooth(tooth, false))}
+              <div className="w-2 mx-0.5 border-l border-white/10" />
+              {LOWER_TEETH.slice(8).map((tooth) => renderTooth(tooth, false))}
             </div>
-            <p className="text-[10px] text-white/40 uppercase tracking-wider mt-3">Lower Arch</p>
+            <p className="text-[9px] text-white/30 uppercase tracking-wider text-center mt-2">Lower</p>
           </div>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-6 mt-4 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-5 rounded bg-primary" />
-            <span className="text-white/60">Abutment (A)</span>
+        <div className="flex items-center justify-center gap-4 mt-3 text-[10px]">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm bg-primary" />
+            <span className="text-white/50">Abutment</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-5 rounded bg-amber-500" />
-            <span className="text-white/60">Pontic (P)</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-sm bg-amber-500" />
+            <span className="text-white/50">Pontic</span>
           </div>
         </div>
       </div>
@@ -286,9 +272,9 @@ export function BridgeSelector({
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-selected rounded-xl border border-primary/30"
+          className="p-3 bg-selected rounded-xl border border-primary/30"
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-primary">
               {bridgeData.units}-Unit Bridge
             </p>
@@ -297,16 +283,16 @@ export function BridgeSelector({
             </p>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-primary/20 rounded-lg p-3">
-              <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Abutments</p>
-              <p className="font-medium text-primary text-sm">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-primary/20 rounded-lg p-2">
+              <p className="text-[9px] text-white/50 uppercase tracking-wider">Abutments</p>
+              <p className="font-medium text-primary text-xs mt-0.5">
                 {bridgeData.abutments.length > 0 ? bridgeData.abutments.sort().join(', ') : '-'}
               </p>
             </div>
-            <div className="bg-amber-500/20 rounded-lg p-3">
-              <p className="text-[10px] text-white/50 uppercase tracking-wider mb-1">Pontics</p>
-              <p className="font-medium text-amber-400 text-sm">
+            <div className="bg-amber-500/20 rounded-lg p-2">
+              <p className="text-[9px] text-white/50 uppercase tracking-wider">Pontics</p>
+              <p className="font-medium text-amber-400 text-xs mt-0.5">
                 {bridgeData.pontics.length > 0 ? bridgeData.pontics.sort().join(', ') : '-'}
               </p>
             </div>
