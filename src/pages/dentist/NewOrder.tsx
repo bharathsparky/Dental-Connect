@@ -1533,11 +1533,50 @@ export function NewOrder() {
                       )}
                     </div>
 
-                    <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-sm text-white/50">Priority</span>
-                      <Badge variant={store.priority === 'rush' ? 'destructive' : store.priority === 'urgent' ? 'warning' : 'outline'}>
-                        {store.priority}
-                      </Badge>
+                    <div className="pt-4 border-t border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/50">Priority</span>
+                        <Badge variant={store.priority === 'rush' ? 'destructive' : store.priority === 'urgent' ? 'warning' : 'outline'}>
+                          {store.priority}
+                        </Badge>
+                      </div>
+                      
+                      {selectedLab && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-white/50">Est. Delivery</span>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-primary" />
+                            <span className="font-medium text-white">
+                              {(() => {
+                                // Parse turnaround like "5-7 days"
+                                const match = selectedLab.turnaround.match(/(\d+)-(\d+)/)
+                                if (!match) return selectedLab.turnaround
+                                
+                                let minDays = parseInt(match[1])
+                                let maxDays = parseInt(match[2])
+                                
+                                // Adjust for priority
+                                if (store.priority === 'rush') {
+                                  minDays = Math.max(1, minDays - 2)
+                                  maxDays = Math.max(2, maxDays - 2)
+                                } else if (store.priority === 'urgent') {
+                                  minDays = Math.max(2, minDays - 1)
+                                  maxDays = Math.max(3, maxDays - 1)
+                                }
+                                
+                                const minDate = new Date()
+                                minDate.setDate(minDate.getDate() + minDays)
+                                const maxDate = new Date()
+                                maxDate.setDate(maxDate.getDate() + maxDays)
+                                
+                                const formatDate = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                                
+                                return `${formatDate(minDate)} - ${formatDate(maxDate)}`
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {store.instructions && (
