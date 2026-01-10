@@ -441,6 +441,14 @@ export function NewOrder() {
                     onBridgeTypeChange={(type: BridgeType) => store.setBridgeData({ bridgeType: type })}
                     onRangeSelect={store.setBridgeRange}
                     onToggleAbutment={store.toggleAbutment}
+                    onReset={() => store.setBridgeData({ 
+                      bridgeType: 'conventional', 
+                      startTooth: null, 
+                      endTooth: null, 
+                      abutments: [], 
+                      pontics: [], 
+                      units: 0 
+                    })}
                   />
                 )}
 

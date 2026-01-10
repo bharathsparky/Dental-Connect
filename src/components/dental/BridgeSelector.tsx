@@ -10,6 +10,7 @@ interface BridgeSelectorProps {
   onBridgeTypeChange: (type: BridgeType) => void
   onRangeSelect: (start: string, end: string) => void
   onToggleAbutment: (tooth: string) => void
+  onReset: () => void
 }
 
 interface ToothSelection {
@@ -56,7 +57,8 @@ export function BridgeSelector({
   bridgeData, 
   onBridgeTypeChange, 
   onRangeSelect,
-  onToggleAbutment 
+  onToggleAbutment,
+  onReset
 }: BridgeSelectorProps) {
   const [selectionStep, setSelectionStep] = useState<'start' | 'end' | 'adjust'>(
     bridgeData.units > 0 ? 'adjust' : 'start'
@@ -68,14 +70,19 @@ export function BridgeSelector({
   useEffect(() => {
     if (bridgeData.units > 0) {
       setSelectionStep('adjust')
+      setTempStart(bridgeData.startTooth || null)
+    } else {
+      setSelectionStep('start')
+      setTempStart(null)
     }
-  }, [bridgeData.units])
+  }, [bridgeData.units, bridgeData.startTooth])
 
+  // Handle tooth click from odontogram
   const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
     const currentSelection = selections.map(s => s.notations.fdi)
     const previousSelection = prevSelectionRef.current
     
-    // Find newly added tooth
+    // Find newly clicked tooth
     const addedTeeth = currentSelection.filter(t => !previousSelection.includes(t))
     
     prevSelectionRef.current = currentSelection
@@ -85,19 +92,22 @@ export function BridgeSelector({
     const clickedTooth = addedTeeth[0]
     
     if (selectionStep === 'start') {
+      // First tooth of range
       setTempStart(clickedTooth)
       setSelectionStep('end')
     } else if (selectionStep === 'end' && tempStart) {
+      // Second tooth - validate and create range
       const startQuad = Math.floor(parseInt(tempStart) / 10)
       const endQuad = Math.floor(parseInt(clickedTooth) / 10)
       
       if (startQuad === endQuad) {
         const teethInRange = getTeethInRange(tempStart, clickedTooth)
         if (teethInRange.length >= 3) {
+          // Valid bridge span
           onRangeSelect(tempStart, clickedTooth)
           setSelectionStep('adjust')
         } else {
-          // Not enough teeth, restart with this tooth
+          // Not enough teeth, restart with new tooth
           setTempStart(clickedTooth)
           prevSelectionRef.current = [clickedTooth]
         }
@@ -107,21 +117,21 @@ export function BridgeSelector({
         prevSelectionRef.current = [clickedTooth]
       }
     } else if (selectionStep === 'adjust') {
-      // In adjust mode, toggle abutment/pontic
+      // Toggle abutment/pontic for existing bridge teeth
       const allBridgeTeeth = [...bridgeData.abutments, ...bridgeData.pontics]
       if (allBridgeTeeth.includes(clickedTooth)) {
         onToggleAbutment(clickedTooth)
       }
-      // Keep the ref in sync with bridge teeth
+      // Keep ref synced
       prevSelectionRef.current = allBridgeTeeth
     }
   }, [selectionStep, tempStart, bridgeData.abutments, bridgeData.pontics, onRangeSelect, onToggleAbutment])
 
-  const resetSelection = () => {
+  const handleReset = () => {
     setTempStart(null)
     setSelectionStep('start')
     prevSelectionRef.current = []
-    onRangeSelect('', '')
+    onReset()
   }
 
   const getInstructionText = () => {
@@ -129,10 +139,50 @@ export function BridgeSelector({
       case 'start':
         return 'Tap the FIRST tooth of the bridge'
       case 'end':
-        return `${tempStart} selected → Tap the LAST tooth`
+        return `${tempStart} selected → Tap the LAST tooth (min 3)`
       case 'adjust':
         return 'Tap to toggle: Abutment ↔ Pontic'
     }
+  }
+
+  // Build CSS for custom tooth colors
+  const buildColorStyles = () => {
+    const styles: string[] = []
+    
+    // Abutment teeth - Cyan
+    bridgeData.abutments.forEach(tooth => {
+      styles.push(`
+        .bridge-chart #teeth-${tooth} path,
+        .bridge-chart [id="teeth-${tooth}"] path {
+          fill: #5ebbbd !important;
+          stroke: #3d9a9c !important;
+        }
+      `)
+    })
+    
+    // Pontic teeth - Amber
+    bridgeData.pontics.forEach(tooth => {
+      styles.push(`
+        .bridge-chart #teeth-${tooth} path,
+        .bridge-chart [id="teeth-${tooth}"] path {
+          fill: #f59e0b !important;
+          stroke: #d97706 !important;
+        }
+      `)
+    })
+    
+    // Temp start selection - Semi-transparent cyan
+    if (tempStart && selectionStep === 'end') {
+      styles.push(`
+        .bridge-chart #teeth-${tempStart} path,
+        .bridge-chart [id="teeth-${tempStart}"] path {
+          fill: #5ebbbd80 !important;
+          stroke: #5ebbbd !important;
+        }
+      `)
+    }
+    
+    return styles.join('\n')
   }
 
   return (
@@ -175,7 +225,7 @@ export function BridgeSelector({
           <h3 className="text-sm font-medium text-white">Select Bridge Span</h3>
           {(tempStart || bridgeData.units > 0) && (
             <button 
-              onClick={resetSelection}
+              onClick={handleReset}
               className="text-xs text-primary flex items-center gap-1 hover:text-primary/80"
             >
               <RotateCcw className="w-3 h-3" />
@@ -191,17 +241,18 @@ export function BridgeSelector({
           {getInstructionText()}
         </div>
 
-        {/* Odontogram */}
-        <div className="bridge-odontogram-wrapper bg-card/50 rounded-xl p-3 border border-border/30 overflow-hidden">
+        {/* Odontogram Chart */}
+        <div className="bridge-chart bg-card/50 rounded-xl p-3 border border-border/30 overflow-hidden">
           <Odontogram
             onChange={handleOdontogramChange}
             className="w-full"
             theme="dark"
             colors={{
+              tooth: '#3d5a7a',
+              toothStroke: '#5a7a9a',
               selected: '#5ebbbd',
-              hover: '#4a7096',
-              default: '#3d5a7a',
-              stroke: '#5a7a9a',
+              selectedStroke: '#4aa8aa',
+              hover: '#4a7096'
             }}
           />
         </div>
@@ -218,7 +269,7 @@ export function BridgeSelector({
           </div>
         </div>
 
-        {/* Selected teeth display for bridge */}
+        {/* Quick toggle pills for selected teeth */}
         {bridgeData.units >= 3 && (
           <div className="mt-3 flex flex-wrap gap-1 justify-center">
             {[...bridgeData.abutments, ...bridgeData.pontics].sort().map(tooth => (
@@ -272,48 +323,39 @@ export function BridgeSelector({
         </motion.div>
       )}
 
-      {/* Custom styles for bridge odontogram */}
+      {/* Dynamic color styles */}
       <style>{`
-        .bridge-odontogram-wrapper svg {
+        .bridge-chart svg {
           width: 100%;
           height: auto;
         }
         
-        /* Style abutment teeth - target by exact ID */
-        ${bridgeData.abutments.map(tooth => `
-          .bridge-odontogram-wrapper #teeth-${tooth} path {
-            fill: #5ebbbd !important;
-            stroke: #3d9a9c !important;
-          }
-          .bridge-odontogram-wrapper g#teeth-${tooth} path {
-            fill: #5ebbbd !important;
-            stroke: #3d9a9c !important;
-          }
-        `).join('')}
+        /* Hide tooltip */
+        .bridge-chart .Odontogram__tooltip,
+        .bridge-chart [class*="tooltip"] {
+          display: none !important;
+        }
         
-        /* Style pontic teeth - target by exact ID */
-        ${bridgeData.pontics.map(tooth => `
-          .bridge-odontogram-wrapper #teeth-${tooth} path {
-            fill: #f59e0b !important;
-            stroke: #d97706 !important;
-          }
-          .bridge-odontogram-wrapper g#teeth-${tooth} path {
-            fill: #f59e0b !important;
-            stroke: #d97706 !important;
-          }
-        `).join('')}
+        /* Base tooth styles */
+        .bridge-chart svg path {
+          fill: #3d5a7a;
+          stroke: #5a7a9a;
+          stroke-width: 1;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
         
-        /* Style temp start selection */
-        ${tempStart ? `
-          .bridge-odontogram-wrapper #teeth-${tempStart} path {
-            fill: #5ebbbd80 !important;
-            stroke: #5ebbbd !important;
-          }
-          .bridge-odontogram-wrapper g#teeth-${tempStart} path {
-            fill: #5ebbbd80 !important;
-            stroke: #5ebbbd !important;
-          }
-        ` : ''}
+        .bridge-chart svg path:hover {
+          fill: #4a7096;
+        }
+        
+        /* Hide text labels */
+        .bridge-chart svg text {
+          display: none !important;
+        }
+        
+        /* Custom colors for bridge teeth */
+        ${buildColorStyles()}
       `}</style>
     </div>
   )
