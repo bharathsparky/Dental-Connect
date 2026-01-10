@@ -145,7 +145,7 @@ export function Home() {
           transition={{ delay: 0.3 }}
         >
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-white">Your Labs</h2>
+            <h2 className="font-semibold text-white">Labs Near You</h2>
             <button
               onClick={() => navigate('/labs')}
               className="text-sm text-primary font-medium flex items-center gap-1"
