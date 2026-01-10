@@ -122,6 +122,10 @@ const LAB_DELIVERY_OPTIONS = [
 // Case types that don't need shade selection
 const NO_SHADE_CASE_TYPES: CaseType[] = ['night_guard', 'retainer', 'waxup', 'surgical_guide', 'bleaching_tray', 'sports_guard', 'clear_aligner']
 
+// FMR diagnostic stage doesn't need shade
+const isFMRDiagnosticStage = (caseType: CaseType, fmrStage: string | null) => 
+  caseType === 'full_mouth_rehab' && fmrStage === 'diagnostic'
+
 export function NewOrder() {
   const navigate = useNavigate()
   const store = useOrderStore()
@@ -183,8 +187,12 @@ export function NewOrder() {
   const needsShade = () => {
     if (!store.caseType) return false
     if (NO_SHADE_CASE_TYPES.includes(store.caseType)) return false
+    // FMR diagnostic stage doesn't need shade
+    if (isFMRDiagnosticStage(store.caseType, store.fmrData.stage)) return false
     // Full metal crown doesn't need shade
     if (store.material === 'full-metal') return false
+    // Metal-only restorations don't need shade
+    if (store.material === 'gold' || store.material === 'gold-inlay') return false
     return true
   }
 
@@ -196,23 +204,43 @@ export function NewOrder() {
       case 3: 
         // Different validation based on case type
         switch (store.caseType) {
-          case 'crown': return store.selectedTeeth.length > 0
-          case 'bridge': return store.bridgeData.units >= 3 // Minimum 3-unit bridge
+          case 'crown': 
+            // Need teeth + margin type for lab instructions
+            return store.selectedTeeth.length > 0 && 
+                   !!store.crownData.marginType
+          case 'bridge': 
+            // Need minimum 3-unit bridge + pontic design if pontics exist
+            const hasPontics = store.bridgeData.pontics.length > 0
+            return store.bridgeData.units >= 3 && 
+                   (!hasPontics || !!store.bridgeData.ponticDesign)
           case 'denture': 
-            if (store.dentureData.dentureType === 'full' || 
-                store.dentureData.dentureType === 'immediate' ||
-                store.dentureData.dentureType === 'obturator') {
-              return !!store.dentureData.arch
+            // Full denture: type + arch + stage
+            if (store.dentureData.dentureType === 'full') {
+              return !!store.dentureData.arch && !!store.dentureData.stage
             }
+            // Immediate: type + arch + stage
+            if (store.dentureData.dentureType === 'immediate') {
+              return !!store.dentureData.arch && !!store.dentureData.stage
+            }
+            // Obturator: complete workflow
+            if (store.dentureData.dentureType === 'obturator') {
+              return !!store.dentureData.obturatorType && 
+                     !!store.dentureData.defectClass && 
+                     !!store.dentureData.defectExtent && 
+                     !!store.dentureData.retentionMethod
+            }
+            // Overdenture: implants + attachment type
             if (store.dentureData.dentureType === 'overdenture') {
-              return (store.dentureData.implantPositions?.length || 0) >= 2
+              return (store.dentureData.implantPositions?.length || 0) >= 2 && 
+                     !!store.dentureData.attachmentType
             }
-            // Partial denture
-            return (store.dentureData.missingTeeth?.length || 0) > 0
+            // Partial denture: missing teeth + base plate type
+            return (store.dentureData.missingTeeth?.length || 0) > 0 && 
+                   !!store.dentureData.basePlateType
           case 'implant': 
-            // For healing stage, only need positions
+            // For healing stage, only need positions + stage
             if (store.implantData.implantStage === 'healing') {
-              return store.implantData.positions.length > 0 && !!store.implantData.implantStage
+              return store.implantData.positions.length > 0
             }
             // For ready/impression_taken, need full details
             return store.implantData.positions.length > 0 && 
@@ -224,12 +252,32 @@ export function NewOrder() {
                    !!store.implantData.restorationType &&
                    !!store.implantData.abutmentType
           case 'veneer':
-            return !!store.veneerData.veneerType && (store.veneerData.selectedTeeth?.length || 0) > 0
+            return !!store.veneerData.veneerType && 
+                   (store.veneerData.selectedTeeth?.length || 0) > 0 &&
+                   !!store.veneerData.incisalOverlap
           case 'inlay_onlay':
-            return !!store.inlayOnlayData.type && (store.inlayOnlayData.selectedTeeth?.length || 0) > 0
+            // Need type + teeth + surface involvement for each tooth
+            const hasTeeth = (store.inlayOnlayData.selectedTeeth?.length || 0) > 0
+            const hasSurfaces = hasTeeth && store.inlayOnlayData.selectedTeeth.every(
+              tooth => !!store.inlayOnlayData.surfaceInvolvement[tooth]
+            )
+            return !!store.inlayOnlayData.type && hasTeeth && hasSurfaces
           case 'night_guard':
-            return !!store.nightGuardData.guardType && !!store.nightGuardData.arch && !!store.nightGuardData.thickness
+            // Hard guards need occlusal scheme
+            const baseValid = !!store.nightGuardData.guardType && 
+                             !!store.nightGuardData.arch && 
+                             !!store.nightGuardData.thickness
+            if (store.nightGuardData.guardType === 'hard') {
+              return baseValid && !!store.nightGuardData.occlusalScheme
+            }
+            return baseValid
           case 'retainer':
+            // Fixed bonded needs wire type + span
+            if (store.retainerData.retainerType === 'fixed_bonded') {
+              return !!store.retainerData.arch && 
+                     !!store.retainerData.wireType && 
+                     !!store.retainerData.span
+            }
             return !!store.retainerData.retainerType && !!store.retainerData.arch
           case 'waxup':
             return !!store.waxupData.purpose && (store.waxupData.selectedTeeth?.length || 0) > 0
@@ -267,7 +315,11 @@ export function NewOrder() {
                    (store.provisionalData.selectedTeeth?.length || 0) > 0
           default: return false
         }
-      case 4: return store.hasImpression && !!store.impressionMaterial
+      case 4: 
+        // Impression step - hasImpression can be true (with material) or false (no impression)
+        // If hasImpression is explicitly set to true, need material
+        // If hasImpression is false, that's also valid (digital cases, etc.)
+        return store.hasImpression === false || (store.hasImpression === true && !!store.impressionMaterial)
       case 5: return !!store.material
       case 6: 
         // Shade step - can skip for non-aesthetic cases
