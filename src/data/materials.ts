@@ -123,6 +123,16 @@ export const MATERIALS: Record<string, Material[]> = {
       features: ['Best Aesthetics', 'Anterior Only', '3-Unit Max'],
       category: 'bridge'
     },
+    {
+      id: 'precision-attachment-bridge',
+      name: 'Precision Attachment Bridge',
+      description: 'Fixed crown with attachment for RPD',
+      priceRange: '₹18,000 - ₹30,000',
+      turnaround: '10-14 days',
+      icon: '🔗',
+      features: ['Hidden Connector', 'Fixed-Removable', 'Aesthetic'],
+      category: 'bridge'
+    },
   ],
   denture: [
     {

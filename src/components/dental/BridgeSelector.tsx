@@ -27,7 +27,8 @@ interface ToothSelection {
 const BRIDGE_TYPES = [
   { id: 'conventional', label: 'Conventional', description: 'Abutments on both sides' },
   { id: 'cantilever', label: 'Cantilever', description: 'Abutment on one side only' },
-  { id: 'maryland', label: 'Maryland', description: 'Wings bonded to adjacent teeth' },
+  { id: 'maryland', label: 'Maryland', description: 'Resin-bonded wings to adjacent teeth' },
+  { id: 'precision_attachment', label: 'Precision Attachment', description: 'Fixed-removable with hidden connector' },
 ]
 
 const PONTIC_DESIGNS = [
