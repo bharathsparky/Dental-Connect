@@ -94,8 +94,8 @@ export function BridgeSelector({
       allGroups.forEach(group => {
         const paths = group.querySelectorAll('path')
         paths.forEach(path => {
-          path.setAttribute('fill', '#3d5a7a')
-          path.setAttribute('stroke', '#5a7a9a')
+          (path as SVGPathElement).style.fill = '#3d5a7a';
+          (path as SVGPathElement).style.stroke = '#5a7a9a';
         })
       })
 
@@ -105,8 +105,8 @@ export function BridgeSelector({
         if (startGroup) {
           const paths = startGroup.querySelectorAll('path')
           paths.forEach(path => {
-            path.setAttribute('fill', '#5ebbbd')
-            path.setAttribute('stroke', '#4aa8aa')
+            (path as SVGPathElement).style.fill = '#5ebbbd';
+            (path as SVGPathElement).style.stroke = '#4aa8aa';
           })
         }
       }
@@ -117,8 +117,8 @@ export function BridgeSelector({
         if (group) {
           const paths = group.querySelectorAll('path')
           paths.forEach(path => {
-            path.setAttribute('fill', '#5ebbbd')
-            path.setAttribute('stroke', '#3d9a9c')
+            (path as SVGPathElement).style.fill = '#5ebbbd';
+            (path as SVGPathElement).style.stroke = '#3d9a9c';
           })
         }
       })
@@ -129,8 +129,8 @@ export function BridgeSelector({
         if (group) {
           const paths = group.querySelectorAll('path')
           paths.forEach(path => {
-            path.setAttribute('fill', '#f59e0b')
-            path.setAttribute('stroke', '#d97706')
+            (path as SVGPathElement).style.fill = '#f59e0b';
+            (path as SVGPathElement).style.stroke = '#d97706';
           })
         }
       })
