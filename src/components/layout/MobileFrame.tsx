@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Smartphone, TabletSmartphone } from "lucide-react"
 
@@ -10,7 +10,29 @@ interface MobileFrameProps {
 
 export function MobileFrame({ children }: MobileFrameProps) {
   const [device, setDevice] = useState<DeviceType>('iphone')
+  const [isMobileView, setIsMobileView] = useState(false)
 
+  useEffect(() => {
+    const checkMobileView = () => {
+      // If viewport width is less than 768px, show mobile responsive view
+      setIsMobileView(window.innerWidth < 768)
+    }
+    
+    checkMobileView()
+    window.addEventListener('resize', checkMobileView)
+    return () => window.removeEventListener('resize', checkMobileView)
+  }, [])
+
+  // Mobile responsive view - just render the app directly
+  if (isMobileView) {
+    return (
+      <div className="min-h-screen bg-background overflow-auto">
+        {children}
+      </div>
+    )
+  }
+
+  // Desktop view - show device mockup
   return (
     <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-6">
       {/* Background atmosphere */}
