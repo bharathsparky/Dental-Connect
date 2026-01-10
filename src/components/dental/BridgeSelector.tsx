@@ -74,8 +74,9 @@ export function BridgeSelector({
     bridgeData.units > 0 ? 'adjust' : 'start'
   )
   const [tempStart, setTempStart] = useState<string | null>(bridgeData.startTooth || null)
-  const prevSelectionRef = useRef<string[]>([])
+  const [odontogramKey, setOdontogramKey] = useState(0) // Key to force remount and clear selection
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const lastClickTimeRef = useRef(0)
 
   // Sync selection step with bridgeData
   useEffect(() => {
@@ -152,82 +153,74 @@ export function BridgeSelector({
     })
   }, [bridgeData.abutments, bridgeData.pontics, tempStart, selectionStep])
 
-  // Apply colors after render with a delay
+  // Apply colors after render with a delay (also re-apply when key changes)
   useLayoutEffect(() => {
     const timer = setTimeout(applyColors, 50)
     return () => clearTimeout(timer)
-  }, [applyColors])
+  }, [applyColors, odontogramKey])
 
-  // Handle tooth click - SIMPLIFIED like ToothChart
+  // Handle tooth click - Use simple detection with debounce
   const handleChange = useCallback((selections: ToothSelection[]) => {
-    const currentSelection = selections.map(s => s.notations.fdi)
-    const previousSelection = prevSelectionRef.current
+    // Debounce rapid calls (the library sometimes fires multiple times)
+    const now = Date.now()
+    if (now - lastClickTimeRef.current < 100) return
+    lastClickTimeRef.current = now
     
-    // Find newly added tooth (clicked)
-    const addedTeeth = currentSelection.filter(t => !previousSelection.includes(t))
-    // Also check for removed teeth (user clicked same tooth to deselect)
-    const removedTeeth = previousSelection.filter(t => !currentSelection.includes(t))
+    // Get the last selection (most recently clicked tooth)
+    if (selections.length === 0) return
+    const clickedTooth = selections[selections.length - 1].notations.fdi
     
-    // Update ref for next comparison
-    prevSelectionRef.current = currentSelection
-    
-    // Determine which tooth was clicked
-    let clickedTooth: string | null = null
-    if (addedTeeth.length > 0) {
-      clickedTooth = addedTeeth[0]
-    } else if (removedTeeth.length > 0) {
-      clickedTooth = removedTeeth[0]
-    }
-    
-    if (!clickedTooth) return
-    
-    console.log('Bridge: Tooth clicked:', clickedTooth, 'Step:', selectionStep)
+    console.log('Bridge: Tooth clicked:', clickedTooth, 'Step:', selectionStep, 'Selections:', selections.length)
     
     if (selectionStep === 'start') {
       // First tooth of range
       setTempStart(clickedTooth)
       setSelectionStep('end')
+      // Clear library selection for next click
+      setOdontogramKey(k => k + 1)
     } else if (selectionStep === 'end' && tempStart) {
       // Second tooth - validate and create range
       const startQuad = Math.floor(parseInt(tempStart) / 10)
       const endQuad = Math.floor(parseInt(clickedTooth) / 10)
       
-      if (startQuad === endQuad) {
+      if (startQuad === endQuad && clickedTooth !== tempStart) {
         const teethInRange = getTeethInRange(tempStart, clickedTooth)
         if (teethInRange.length >= 3) {
           // Valid bridge span - call parent
           onRangeSelect(tempStart, clickedTooth)
           setSelectionStep('adjust')
-          // Reset the library's internal selection
-          prevSelectionRef.current = []
         } else {
           // Not enough teeth, restart with new tooth
           setTempStart(clickedTooth)
-          prevSelectionRef.current = []
         }
+      } else if (clickedTooth === tempStart) {
+        // Same tooth clicked twice - deselect and restart
+        setTempStart(null)
+        setSelectionStep('start')
       } else {
         // Different quadrant, restart with new tooth
         setTempStart(clickedTooth)
-        prevSelectionRef.current = []
       }
+      // Clear library selection for next action
+      setOdontogramKey(k => k + 1)
     } else if (selectionStep === 'adjust') {
       // Toggle abutment/pontic for existing bridge teeth
       const allBridgeTeeth = [...bridgeData.abutments, ...bridgeData.pontics]
       if (allBridgeTeeth.includes(clickedTooth)) {
         onToggleAbutment(clickedTooth)
       }
-      // Keep library selection in sync with bridge teeth
-      prevSelectionRef.current = []
+      // Clear library selection
+      setOdontogramKey(k => k + 1)
     }
     
     // Re-apply colors after state change
-    setTimeout(applyColors, 100)
+    setTimeout(applyColors, 150)
   }, [selectionStep, tempStart, bridgeData.abutments, bridgeData.pontics, onRangeSelect, onToggleAbutment, applyColors])
 
   const handleReset = () => {
     setTempStart(null)
     setSelectionStep('start')
-    prevSelectionRef.current = []
+    setOdontogramKey(k => k + 1)
     onReset()
     setTimeout(applyColors, 100)
   }
@@ -303,6 +296,7 @@ export function BridgeSelector({
         <div className="rounded-2xl p-4 overflow-hidden">
           <div ref={wrapperRef} className="odontogram-wrapper">
             <Odontogram
+              key={odontogramKey}
               onChange={handleChange}
               className="w-full"
               theme="dark"
