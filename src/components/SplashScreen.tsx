@@ -58,13 +58,14 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
               stiffness: 100,
               delay: 0.2 
             }}
-            className="relative w-56 h-56 mb-4"
+            className="relative w-[85%] max-w-[350px] aspect-[7/5] mb-4"
           >
             {animationData && (
               <Lottie
                 animationData={animationData}
                 loop={true}
                 className="w-full h-full"
+                style={{ transform: 'scale(1.1)' }}
               />
             )}
           </motion.div>
