@@ -45,19 +45,20 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
           transition={{ duration: 0.5 }}
           className="w-full h-full flex flex-col items-center justify-center overflow-hidden relative"
           style={{
-            background: 'radial-gradient(ellipse 120% 80% at 50% 45%, #8DC4DB 0%, #6A9FC4 50%, #5889AD 100%)'
+            background: 'linear-gradient(180deg, #7AB4D5 0%, #82BAD9 30%, #7DB5D6 70%, #6FA9CB 100%)'
           }}
         >
           {/* Full-screen Lottie Animation as background */}
-          <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-5%' }}>
+          <div className="absolute inset-0 flex items-center justify-center">
             {animationData && (
               <Lottie
                 animationData={animationData}
                 loop={true}
                 style={{ 
-                  width: '160%',
-                  height: '160%',
-                  minWidth: '600px'
+                  width: '145%',
+                  height: '145%',
+                  minWidth: '550px',
+                  marginTop: '-8%'
                 }}
               />
             )}
