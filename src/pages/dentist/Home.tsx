@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import { useNavigate } from "react-router-dom"
-import { Plus, ChevronRight, Clock, Bell, AlertCircle, CheckCircle2, Package, Calendar } from "lucide-react"
+import { Plus, ChevronRight, Clock, Bell, AlertCircle, CheckCircle2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MOCK_ORDERS } from "@/stores/orderStore"
@@ -52,67 +52,6 @@ export function Home() {
     const deliveredDate = o.estimatedDelivery // Using estimatedDelivery as delivered date for mock
     return deliveredDate >= startOfMonth
   }).length
-
-  // Today's Tasks - Actionable items
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
-  
-  const todaysTasks = [
-    // Orders due today
-    ...MOCK_ORDERS
-      .filter(o => {
-        const deliveryDate = new Date(o.estimatedDelivery)
-        deliveryDate.setHours(0, 0, 0, 0)
-        return deliveryDate.getTime() === today.getTime() && 
-               o.status !== 'delivered' && 
-               o.status !== 'ready'
-      })
-      .map(o => ({
-        ...o,
-        taskType: 'due_today' as const,
-        taskLabel: 'Due Today',
-        taskIcon: Calendar,
-        taskColor: 'text-amber-400',
-        priority: 'high' as const
-      })),
-    // Orders ready for pickup
-    ...MOCK_ORDERS
-      .filter(o => o.status === 'ready')
-      .map(o => ({
-        ...o,
-        taskType: 'ready' as const,
-        taskLabel: 'Ready for Pickup',
-        taskIcon: CheckCircle2,
-        taskColor: 'text-emerald-400',
-        priority: 'high' as const
-      })),
-    // Orders due tomorrow (urgent)
-    ...MOCK_ORDERS
-      .filter(o => {
-        const deliveryDate = new Date(o.estimatedDelivery)
-        deliveryDate.setHours(0, 0, 0, 0)
-        return deliveryDate.getTime() === tomorrow.getTime() && 
-               o.status !== 'delivered' && 
-               o.status !== 'ready'
-      })
-      .map(o => ({
-        ...o,
-        taskType: 'due_tomorrow' as const,
-        taskLabel: 'Due Tomorrow',
-        taskIcon: AlertCircle,
-        taskColor: 'text-orange-400',
-        priority: 'medium' as const
-      })),
-  ]
-    .sort((a, b) => {
-      // Sort by priority (high first), then by delivery date
-      if (a.priority !== b.priority) {
-        return a.priority === 'high' ? -1 : 1
-      }
-      return new Date(a.estimatedDelivery).getTime() - new Date(b.estimatedDelivery).getTime()
-    })
-    .slice(0, 3) // Show top 3 tasks
 
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
@@ -205,145 +144,64 @@ export function Home() {
           })}
         </motion.div>
 
-        {/* Today's Tasks */}
-        {todaysTasks.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-white">Today's Tasks</h2>
-              <button
-                onClick={() => navigate('/orders')}
-                className="text-sm text-primary font-medium flex items-center gap-1"
-              >
-                View All <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+        {/* Active Orders */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-white">Active Orders</h2>
+            <button
+              onClick={() => navigate('/orders')}
+              className="text-sm text-primary font-medium flex items-center gap-1"
+            >
+              View All <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
 
-            <Card variant="gradient">
-              <CardContent className="p-0 divide-y divide-white/5">
-                {todaysTasks.map((task, i) => {
-                  const TaskIcon = task.taskIcon
-                  const statusInfo = getStatusInfo(task.status)
-                  
-                  return (
-                    <motion.button
-                      key={task.id}
-                      onClick={() => navigate(`/orders/${task.id}`)}
-                      className={cn(
-                        "w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-white/5",
-                        i === 0 && "rounded-t-2xl",
-                        i === todaysTasks.length - 1 && "rounded-b-2xl"
-                      )}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className={cn(
-                        "p-2 rounded-lg flex-shrink-0",
-                        task.taskType === 'due_today' && "bg-amber-500/10",
-                        task.taskType === 'ready' && "bg-emerald-500/10",
-                        task.taskType === 'due_tomorrow' && "bg-orange-500/10"
-                      )}>
-                        <TaskIcon className={cn("w-4 h-4", task.taskColor)} />
-                      </div>
-                      <img
-                        src={task.labImage}
-                        alt={task.labName}
-                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-white text-sm truncate">{task.labName}</p>
-                          <span className={cn("text-[10px] px-1.5 py-0.5 rounded", 
-                            task.taskType === 'due_today' && "bg-amber-500/20 text-amber-400",
-                            task.taskType === 'ready' && "bg-emerald-500/20 text-emerald-400",
-                            task.taskType === 'due_tomorrow' && "bg-orange-500/20 text-orange-400"
-                          )}>
-                            {task.taskLabel}
-                          </span>
-                        </div>
-                        <p className="text-xs text-white/50">
-                          {task.caseType} · {Array.isArray(task.teeth) ? task.teeth.join(', ') : task.teeth}
-                        </p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className={cn("text-xs font-medium", statusInfo.color)}>
-                          {statusInfo.label}
-                        </p>
-                        <p className="text-[10px] text-white/40 flex items-center gap-1 justify-end mt-0.5">
-                          <Clock className="w-3 h-3" />
-                          {task.estimatedDelivery.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                        </p>
-                      </div>
-                    </motion.button>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          </motion.section>
-        )}
-
-        {/* All Active Orders - Fallback if no tasks */}
-        {todaysTasks.length === 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-white">Active Orders</h2>
-              <button
-                onClick={() => navigate('/orders')}
-                className="text-sm text-primary font-medium flex items-center gap-1"
-              >
-                View All <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <Card variant="gradient">
-              <CardContent className="p-0 divide-y divide-white/5">
-                {activeOrders.slice(0, 3).map((order, i) => {
-                  const statusInfo = getStatusInfo(order.status)
-                  
-                  return (
-                    <motion.button
-                      key={order.id}
-                      onClick={() => navigate(`/orders/${order.id}`)}
-                      className={cn(
-                        "w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-white/5",
-                        i === 0 && "rounded-t-2xl",
-                        i === activeOrders.slice(0, 3).length - 1 && "rounded-b-2xl"
-                      )}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <img
-                        src={order.labImage}
-                        alt={order.labName}
-                        className="w-11 h-11 rounded-xl object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white text-sm truncate">{order.labName}</p>
-                        <p className="text-xs text-white/50">
-                          {order.caseType} · {Array.isArray(order.teeth) ? order.teeth.join(', ') : order.teeth}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className={cn("text-xs font-medium", statusInfo.color)}>
-                          {statusInfo.label}
-                        </p>
-                        <p className="text-[10px] text-white/40 flex items-center gap-1 justify-end mt-0.5">
-                          <Clock className="w-3 h-3" />
-                          {order.estimatedDelivery.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                        </p>
-                      </div>
-                    </motion.button>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          </motion.section>
-        )}
+          <Card variant="gradient">
+            <CardContent className="p-0 divide-y divide-white/5">
+              {activeOrders.slice(0, 3).map((order, i) => {
+                const statusInfo = getStatusInfo(order.status)
+                
+                return (
+                  <motion.button
+                    key={order.id}
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-4 text-left transition-colors hover:bg-white/5",
+                      i === 0 && "rounded-t-2xl",
+                      i === activeOrders.slice(0, 3).length - 1 && "rounded-b-2xl"
+                    )}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <img
+                      src={order.labImage}
+                      alt={order.labName}
+                      className="w-11 h-11 rounded-xl object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white text-sm truncate">{order.labName}</p>
+                      <p className="text-xs text-white/50">
+                        {order.caseType} · {Array.isArray(order.teeth) ? order.teeth.join(', ') : order.teeth}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={cn("text-xs font-medium", statusInfo.color)}>
+                        {statusInfo.label}
+                      </p>
+                      <p className="text-[10px] text-white/40 flex items-center gap-1 justify-end mt-0.5">
+                        <Clock className="w-3 h-3" />
+                        {order.estimatedDelivery.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                  </motion.button>
+                )
+              })}
+            </CardContent>
+          </Card>
+        </motion.section>
 
         {/* Quick Labs */}
         <motion.section

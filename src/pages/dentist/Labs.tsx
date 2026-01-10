@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Search, SlidersHorizontal, MapPin, X, Star, Clock, BadgeCheck } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -9,60 +9,70 @@ import { Card, CardContent } from "@/components/ui/card"
 import { MOCK_LABS } from "@/data/mockLabs"
 import { cn } from "@/lib/utils"
 
-const SERVICE_FILTERS = ['All', 'Crown', 'Bridge', 'Denture', 'Implant']
-
-const SORT_OPTIONS = [
-  { value: 'rating', label: 'Highest Rated' },
-  { value: 'distance', label: 'Nearest First' },
-  { value: 'turnaround', label: 'Fastest Delivery' },
-  { value: 'price-low', label: 'Price: Low to High' },
-  { value: 'price-high', label: 'Price: High to Low' },
+const LAB_SERVICE_FILTERS = [
+  { id: 'crown', label: 'Crown' },
+  { id: 'bridge', label: 'Bridge' },
+  { id: 'denture', label: 'Denture' },
+  { id: 'implant', label: 'Implant' },
+  { id: 'veneer', label: 'Veneer' },
+  { id: 'night_guard', label: 'Night Guard' },
+  { id: 'surgical_guide', label: 'Surgical Guide' },
 ]
 
-const RATING_FILTERS = [
-  { value: '0', label: 'All Ratings' },
-  { value: '4.5', label: '4.5+ Stars' },
-  { value: '4.7', label: '4.7+ Stars' },
-  { value: '4.9', label: '4.9+ Stars' },
+const LAB_SORT_OPTIONS = [
+  { id: 'rating', label: 'Top Rated' },
+  { id: 'distance', label: 'Nearest' },
+  { id: 'turnaround', label: 'Fastest' },
+]
+
+const LAB_RATING_OPTIONS = [
+  { value: 4.5, label: '4.5+' },
+  { value: 4.0, label: '4.0+' },
+  { value: 3.5, label: '3.5+' },
+]
+
+const LAB_DELIVERY_OPTIONS = [
+  { value: '3-5 days', label: '3-5 days' },
+  { value: '5-7 days', label: '5-7 days' },
+  { value: '7-10 days', label: '7-10 days' },
 ]
 
 export function Labs() {
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
-  
-  // Get filters from URL
-  const showFilters = searchParams.get('filters') === 'open'
-  const activeService = searchParams.get('service') || 'All'
-  const sortBy = searchParams.get('sort') || 'rating'
-  const minRating = parseFloat(searchParams.get('rating') || '0')
-  
-  const toggleFilters = () => {
-    if (showFilters) {
-      searchParams.delete('filters')
-    } else {
-      searchParams.set('filters', 'open')
-    }
-    setSearchParams(searchParams)
-  }
+  const [showLabFilters, setShowLabFilters] = useState(false)
+  const [labServiceFilter, setLabServiceFilter] = useState<string[]>([])
+  const [labSortBy, setLabSortBy] = useState('rating')
+  const [labMinRating, setLabMinRating] = useState<number | null>(null)
+  const [labMaxDelivery, setLabMaxDelivery] = useState<string | null>(null)
 
   // Filter and sort labs
   const filteredLabs = useMemo(() => {
     let labs = MOCK_LABS.filter(lab => {
+      // Search filter
       const matchesSearch = searchQuery === '' || 
         lab.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lab.address.toLowerCase().includes(searchQuery.toLowerCase())
       
-      const matchesService = activeService === 'All' || 
-        lab.services.some(s => s.toLowerCase() === activeService.toLowerCase())
+      // Service filter
+      const matchesService = labServiceFilter.length === 0 || 
+        labServiceFilter.some(filter => 
+          lab.services.some(s => s.toLowerCase() === filter.toLowerCase())
+        )
       
-      const matchesRating = lab.rating >= minRating
+      // Rating filter
+      const matchesRating = labMinRating === null || lab.rating >= labMinRating
       
-      return matchesSearch && matchesService && matchesRating
+      // Delivery time filter
+      const matchesDelivery = labMaxDelivery === null || 
+        lab.turnaround.includes(labMaxDelivery.split('-')[0]) ||
+        lab.turnaround.includes(labMaxDelivery.split('-')[1]?.trim())
+      
+      return matchesSearch && matchesService && matchesRating && matchesDelivery
     })
 
     // Sort labs
-    switch (sortBy) {
+    switch (labSortBy) {
       case 'rating':
         labs.sort((a, b) => b.rating - a.rating)
         break
@@ -75,33 +85,12 @@ export function Labs() {
           return getMinDays(a.turnaround) - getMinDays(b.turnaround)
         })
         break
-      case 'price-low':
-        labs.sort((a, b) => a.priceRange.length - b.priceRange.length)
-        break
-      case 'price-high':
-        labs.sort((a, b) => b.priceRange.length - a.priceRange.length)
-        break
     }
 
     return labs
-  }, [searchQuery, activeService, minRating, sortBy])
+  }, [searchQuery, labServiceFilter, labMinRating, labMaxDelivery, labSortBy])
 
-  // Handle filter changes
-  const updateFilter = (key: string, value: string) => {
-    if (value === 'All' || value === '0' || value === 'rating') {
-      searchParams.delete(key)
-    } else {
-      searchParams.set(key, value)
-    }
-    setSearchParams(searchParams)
-  }
-
-  const clearAllFilters = () => {
-    setSearchQuery('')
-    setSearchParams({})
-  }
-
-  const hasActiveFilters = activeService !== 'All' || minRating > 0 || sortBy !== 'rating'
+  const hasActiveFilters = labServiceFilter.length > 0 || labMinRating !== null || labMaxDelivery !== null || labSortBy !== 'rating'
 
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
@@ -134,7 +123,7 @@ export function Labs() {
               "h-11 w-11 relative",
               hasActiveFilters && "border-primary"
             )}
-            onClick={toggleFilters}
+            onClick={() => setShowLabFilters(true)}
           >
             <SlidersHorizontal className="w-5 h-5" />
             {hasActiveFilters && (
@@ -143,92 +132,203 @@ export function Labs() {
           </Button>
         </div>
 
-        {/* Service Filters */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {SERVICE_FILTERS.map((filter) => {
-            const isActive = activeService === filter
-            return (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => updateFilter('service', filter)}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-card border border-border/50 text-white/70 hover:text-white hover:border-white/30"
-                )}
+        {/* Active Filter Tags */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap gap-2">
+            {labServiceFilter.map((service) => (
+              <Badge
+                key={service}
+                variant="outline"
+                className="bg-primary/20 border-primary/50 text-primary text-xs"
               >
-                {filter}
-              </button>
-            )
-          })}
-        </div>
+                {LAB_SERVICE_FILTERS.find(s => s.id === service)?.label || service}
+                <button
+                  onClick={() => setLabServiceFilter(labServiceFilter.filter(s => s !== service))}
+                  className="ml-1.5 hover:text-primary/70"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            ))}
+            {labMinRating !== null && (
+              <Badge
+                variant="outline"
+                className="bg-primary/20 border-primary/50 text-primary text-xs"
+              >
+                {labMinRating}+ Rating
+                <button
+                  onClick={() => setLabMinRating(null)}
+                  className="ml-1.5 hover:text-primary/70"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+            {labMaxDelivery !== null && (
+              <Badge
+                variant="outline"
+                className="bg-primary/20 border-primary/50 text-primary text-xs"
+              >
+                Max {labMaxDelivery}
+                <button
+                  onClick={() => setLabMaxDelivery(null)}
+                  className="ml-1.5 hover:text-primary/70"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Advanced Filters Panel */}
+      {/* Lab Filters Modal */}
       <AnimatePresence>
-        {showFilters && (
+        {showLabFilters && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-b border-border/30"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+            onClick={() => setShowLabFilters(false)}
           >
-            <div className="px-5 py-4 space-y-4 bg-card/30">
-              {/* Sort By */}
-              <div>
-                <label className="text-xs text-white/50 uppercase tracking-wide mb-2 block">Sort By</label>
-                <div className="flex flex-wrap gap-2">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => updateFilter('sort', option.value)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                        sortBy === option.value
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-white/5 text-white/60 hover:text-white"
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-[390px] bg-card rounded-t-3xl max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Handle bar */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
               </div>
 
-              {/* Minimum Rating */}
-              <div>
-                <label className="text-xs text-white/50 uppercase tracking-wide mb-2 block">Minimum Rating</label>
-                <div className="flex flex-wrap gap-2">
-                  {RATING_FILTERS.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => updateFilter('rating', option.value)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1",
-                        minRating === parseFloat(option.value)
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-white/5 text-white/60 hover:text-white"
-                      )}
-                    >
-                      {option.value !== '0' && <Star className="w-3 h-3 fill-current" />}
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              {hasActiveFilters && (
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pb-4 border-b border-border/50">
+                <h2 className="text-lg font-semibold text-white">Filter & Sort</h2>
                 <button
-                  onClick={clearAllFilters}
-                  className="text-sm text-primary hover:underline"
+                  onClick={() => {
+                    setLabServiceFilter([])
+                    setLabMinRating(null)
+                    setLabMaxDelivery(null)
+                    setLabSortBy('rating')
+                  }}
+                  className="text-sm text-primary"
                 >
-                  Clear all filters
+                  Reset
                 </button>
-              )}
-            </div>
+              </div>
+
+              <div className="p-5 space-y-6 overflow-auto max-h-[60vh]">
+                {/* Services */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-3">Services</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {LAB_SERVICE_FILTERS.map((filter) => (
+                      <button
+                        key={filter.id}
+                        onClick={() => {
+                          if (labServiceFilter.includes(filter.id)) {
+                            setLabServiceFilter(labServiceFilter.filter(f => f !== filter.id))
+                          } else {
+                            setLabServiceFilter([...labServiceFilter, filter.id])
+                          }
+                        }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl text-sm font-medium transition-all",
+                          labServiceFilter.includes(filter.id)
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-white/5 text-white/70 hover:text-white border border-border/50"
+                        )}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rating */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    Minimum Rating
+                  </h3>
+                  <div className="flex gap-2">
+                    {LAB_RATING_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setLabMinRating(labMinRating === option.value ? null : option.value)}
+                        className={cn(
+                          "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                          labMinRating === option.value
+                            ? "bg-amber-500/20 border border-amber-500/50 text-amber-400"
+                            : "bg-white/5 text-white/70 hover:text-white border border-border/50"
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Delivery Time */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-emerald-400" />
+                    Maximum Delivery Time
+                  </h3>
+                  <div className="flex gap-2">
+                    {LAB_DELIVERY_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setLabMaxDelivery(labMaxDelivery === option.value ? null : option.value)}
+                        className={cn(
+                          "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                          labMaxDelivery === option.value
+                            ? "bg-emerald-500/20 border border-emerald-500/50 text-emerald-400"
+                            : "bg-white/5 text-white/70 hover:text-white border border-border/50"
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <h3 className="text-sm font-medium text-white mb-3">Sort By</h3>
+                  <div className="flex gap-2">
+                    {LAB_SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => setLabSortBy(option.id)}
+                        className={cn(
+                          "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                          labSortBy === option.id
+                            ? "bg-primary/20 border border-primary/50 text-primary"
+                            : "bg-white/5 text-white/70 hover:text-white border border-border/50"
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Apply Button */}
+              <div className="p-5 pt-0">
+                <button
+                  onClick={() => setShowLabFilters(false)}
+                  className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -243,8 +343,8 @@ export function Labs() {
       <div className="px-5 pb-2">
         <p className="text-xs text-white/40">
           {filteredLabs.length} {filteredLabs.length === 1 ? 'lab' : 'labs'} found
-          {activeService !== 'All' && ` for "${activeService}"`}
-          {minRating > 0 && ` with ${minRating}+ rating`}
+          {labServiceFilter.length > 0 && ` for ${labServiceFilter.map(s => LAB_SERVICE_FILTERS.find(f => f.id === s)?.label).join(', ')}`}
+          {labMinRating !== null && ` with ${labMinRating}+ rating`}
         </p>
       </div>
 
@@ -298,18 +398,22 @@ export function Labs() {
                 {/* Content */}
                 <div className="p-4 space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    {lab.services.slice(0, 4).map((service) => (
-                      <Badge 
-                        key={service} 
-                        variant="outline" 
-                        className={cn(
-                          "text-xs",
-                          activeService === service && "bg-primary/20 border-primary/50 text-primary"
-                        )}
-                      >
-                        {service}
-                      </Badge>
-                    ))}
+                    {lab.services.slice(0, 4).map((service) => {
+                      const serviceId = LAB_SERVICE_FILTERS.find(f => f.label.toLowerCase() === service.toLowerCase())?.id
+                      const isFiltered = serviceId && labServiceFilter.includes(serviceId)
+                      return (
+                        <Badge 
+                          key={service} 
+                          variant="outline" 
+                          className={cn(
+                            "text-xs",
+                            isFiltered && "bg-primary/20 border-primary/50 text-primary"
+                          )}
+                        >
+                          {service}
+                        </Badge>
+                      )
+                    })}
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-white/50">
@@ -333,7 +437,13 @@ export function Labs() {
             </p>
             <Button
               variant="secondary"
-              onClick={clearAllFilters}
+              onClick={() => {
+                setLabServiceFilter([])
+                setLabMinRating(null)
+                setLabMaxDelivery(null)
+                setLabSortBy('rating')
+                setSearchQuery('')
+              }}
             >
               Clear all filters
             </Button>
