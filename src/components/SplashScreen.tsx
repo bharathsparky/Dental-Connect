@@ -45,17 +45,9 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
           transition={{ duration: 0.5 }}
           className="w-full h-full flex flex-col items-center justify-center"
           style={{
-            background: 'linear-gradient(180deg, #0a0a0f 0%, #0d1117 50%, #0a0a0f 100%)'
+            background: '#73B6D9'
           }}
         >
-          {/* Ambient glow */}
-          <div 
-            className="absolute inset-0 opacity-30"
-            style={{
-              background: 'radial-gradient(circle at 50% 40%, rgba(94, 187, 189, 0.15) 0%, transparent 60%)'
-            }}
-          />
-
           {/* Lottie Animation */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -66,7 +58,7 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
               stiffness: 100,
               delay: 0.2 
             }}
-            className="relative w-48 h-48 mb-6"
+            className="relative w-56 h-56 mb-4"
           >
             {animationData && (
               <Lottie
@@ -84,14 +76,15 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
             transition={{ delay: 0.5, duration: 0.5 }}
             className="text-center"
           >
-            <h1 className="text-3xl font-bold text-white tracking-tight">
-              Dent<span className="text-primary">Connect</span>
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#1a3a4a' }}>
+              Dent<span style={{ color: '#0d5c6e' }}>Connect</span>
             </h1>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.5 }}
-              className="text-sm text-white/50 mt-2"
+              className="text-sm mt-2"
+              style={{ color: '#1a3a4a99' }}
             >
               Seamless Dental Lab Orders
             </motion.p>
@@ -104,14 +97,15 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
             transition={{ delay: 1.2, duration: 0.5 }}
             className="absolute bottom-20"
           >
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="w-2 h-2 rounded-full bg-primary"
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: '#1a3a4a' }}
                   animate={{
                     scale: [1, 1.3, 1],
-                    opacity: [0.5, 1, 0.5]
+                    opacity: [0.4, 1, 0.4]
                   }}
                   transition={{
                     duration: 0.8,
