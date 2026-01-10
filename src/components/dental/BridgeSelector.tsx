@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { motion } from "motion/react"
 import { Check, ArrowRight, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Odontogram } from "react-odontogram"
 import type { BridgeData, BridgeType } from "@/stores/orderStore"
 
 interface BridgeSelectorProps {
@@ -11,44 +12,21 @@ interface BridgeSelectorProps {
   onToggleAbutment: (tooth: string) => void
 }
 
+interface ToothSelection {
+  id: string
+  notations: {
+    fdi: string
+    universal: string
+    palmer: string
+  }
+  type: string
+}
+
 const BRIDGE_TYPES = [
   { id: 'conventional', label: 'Conventional', description: 'Abutments on both sides' },
   { id: 'cantilever', label: 'Cantilever', description: 'Abutment on one side only' },
   { id: 'maryland', label: 'Maryland', description: 'Wings bonded to adjacent teeth' },
 ]
-
-// FDI notation teeth layout
-const UPPER_TEETH = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28']
-const LOWER_TEETH = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38']
-
-// Tooth type mapping for different shapes
-const getToothType = (fdi: string): 'molar' | 'premolar' | 'canine' | 'incisor' => {
-  const num = parseInt(fdi) % 10
-  if (num >= 6) return 'molar'
-  if (num >= 4) return 'premolar'
-  if (num === 3) return 'canine'
-  return 'incisor'
-}
-
-// SVG paths for different tooth types (more realistic shapes)
-const TOOTH_PATHS = {
-  molar: {
-    upper: "M2 2 Q0 4 0 8 L1 22 Q2 26 8 26 L16 26 Q22 26 23 22 L24 8 Q24 4 22 2 Q18 0 12 0 Q6 0 2 2",
-    lower: "M2 24 Q0 22 0 18 L1 4 Q2 0 8 0 L16 0 Q22 0 23 4 L24 18 Q24 22 22 24 Q18 26 12 26 Q6 26 2 24"
-  },
-  premolar: {
-    upper: "M3 2 Q1 4 1 8 L2 20 Q3 24 10 24 L14 24 Q21 24 22 20 L23 8 Q23 4 21 2 Q17 0 12 0 Q7 0 3 2",
-    lower: "M3 24 Q1 22 1 18 L2 6 Q3 2 10 2 L14 2 Q21 2 22 6 L23 18 Q23 22 21 24 Q17 26 12 26 Q7 26 3 24"
-  },
-  canine: {
-    upper: "M4 2 Q2 4 2 7 L3 18 Q4 24 12 24 Q20 24 21 18 L22 7 Q22 4 20 2 Q16 0 12 0 Q8 0 4 2",
-    lower: "M4 24 Q2 22 2 19 L3 8 Q4 2 12 2 Q20 2 21 8 L22 19 Q22 22 20 24 Q16 26 12 26 Q8 26 4 24"
-  },
-  incisor: {
-    upper: "M5 2 Q3 4 3 7 L4 17 Q5 22 12 22 Q19 22 20 17 L21 7 Q21 4 19 2 Q15 0 12 0 Q9 0 5 2",
-    lower: "M5 24 Q3 22 3 19 L4 9 Q5 4 12 4 Q19 4 20 9 L21 19 Q21 22 19 24 Q15 26 12 26 Q9 26 5 24"
-  }
-}
 
 // Get all teeth in a range (same quadrant)
 function getTeethInRange(start: string, end: string): string[] {
@@ -83,48 +61,68 @@ export function BridgeSelector({
   const [selectionStep, setSelectionStep] = useState<'start' | 'end' | 'adjust'>(
     bridgeData.units > 0 ? 'adjust' : 'start'
   )
-  const [tempStart, setTempStart] = useState<string | null>(bridgeData.startTooth)
+  const [tempStart, setTempStart] = useState<string | null>(bridgeData.startTooth || null)
+  const prevSelectionRef = useRef<string[]>([])
 
-  const handleToothClick = (tooth: string) => {
+  // Sync selection step with bridgeData
+  useEffect(() => {
+    if (bridgeData.units > 0) {
+      setSelectionStep('adjust')
+    }
+  }, [bridgeData.units])
+
+  const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
+    const currentSelection = selections.map(s => s.notations.fdi)
+    const previousSelection = prevSelectionRef.current
+    
+    // Find newly added tooth
+    const addedTeeth = currentSelection.filter(t => !previousSelection.includes(t))
+    
+    prevSelectionRef.current = currentSelection
+    
+    if (addedTeeth.length === 0) return
+    
+    const clickedTooth = addedTeeth[0]
+    
     if (selectionStep === 'start') {
-      setTempStart(tooth)
+      setTempStart(clickedTooth)
       setSelectionStep('end')
     } else if (selectionStep === 'end' && tempStart) {
       const startQuad = Math.floor(parseInt(tempStart) / 10)
-      const endQuad = Math.floor(parseInt(tooth) / 10)
+      const endQuad = Math.floor(parseInt(clickedTooth) / 10)
       
       if (startQuad === endQuad) {
-        const teethInRange = getTeethInRange(tempStart, tooth)
+        const teethInRange = getTeethInRange(tempStart, clickedTooth)
         if (teethInRange.length >= 3) {
-          onRangeSelect(tempStart, tooth)
+          onRangeSelect(tempStart, clickedTooth)
           setSelectionStep('adjust')
         } else {
-          setTempStart(tooth)
+          // Not enough teeth, restart with this tooth
+          setTempStart(clickedTooth)
+          prevSelectionRef.current = [clickedTooth]
         }
       } else {
-        setTempStart(tooth)
+        // Different quadrant, restart
+        setTempStart(clickedTooth)
+        prevSelectionRef.current = [clickedTooth]
       }
     } else if (selectionStep === 'adjust') {
+      // In adjust mode, toggle abutment/pontic
       const allBridgeTeeth = [...bridgeData.abutments, ...bridgeData.pontics]
-      if (allBridgeTeeth.includes(tooth)) {
-        onToggleAbutment(tooth)
+      if (allBridgeTeeth.includes(clickedTooth)) {
+        onToggleAbutment(clickedTooth)
       }
+      // Keep the ref in sync with bridge teeth
+      prevSelectionRef.current = allBridgeTeeth
     }
-  }
+  }, [selectionStep, tempStart, bridgeData.abutments, bridgeData.pontics, onRangeSelect, onToggleAbutment])
 
   const resetSelection = () => {
     setTempStart(null)
     setSelectionStep('start')
+    prevSelectionRef.current = []
     onRangeSelect('', '')
   }
-
-  const isInBridgeRange = (tooth: string) => {
-    return bridgeData.abutments.includes(tooth) || bridgeData.pontics.includes(tooth)
-  }
-
-  const isAbutment = (tooth: string) => bridgeData.abutments.includes(tooth)
-  const isPontic = (tooth: string) => bridgeData.pontics.includes(tooth)
-  const isStartSelection = (tooth: string) => tooth === tempStart && selectionStep === 'end'
 
   const getInstructionText = () => {
     switch (selectionStep) {
@@ -135,88 +133,6 @@ export function BridgeSelector({
       case 'adjust':
         return 'Tap to toggle: Abutment ↔ Pontic'
     }
-  }
-
-  const renderTooth = (tooth: string, isUpper: boolean) => {
-    const inRange = isInBridgeRange(tooth)
-    const abutment = isAbutment(tooth)
-    const pontic = isPontic(tooth)
-    const isStart = isStartSelection(tooth)
-    const toothType = getToothType(tooth)
-    const path = TOOTH_PATHS[toothType][isUpper ? 'upper' : 'lower']
-    
-    // Colors
-    const getFillColor = () => {
-      if (abutment) return '#5ebbbd' // Primary cyan
-      if (pontic) return '#f59e0b' // Amber
-      if (isStart) return '#5ebbbd80' // Primary with opacity
-      return '#374151' // Default gray
-    }
-    
-    const getStrokeColor = () => {
-      if (abutment) return '#3d9a9c'
-      if (pontic) return '#d97706'
-      if (isStart) return '#5ebbbd'
-      return '#4b5563'
-    }
-    
-    return (
-      <button
-        key={tooth}
-        onClick={() => handleToothClick(tooth)}
-        className="relative group focus:outline-none flex flex-col items-center"
-        title={`Tooth ${tooth}`}
-      >
-        {/* Tooth number on top for upper */}
-        {isUpper && (
-          <span className={cn(
-            "text-[7px] font-medium mb-0.5 leading-none transition-colors",
-            inRange ? (abutment ? "text-primary" : "text-amber-400") : isStart ? "text-primary" : "text-white/30"
-          )}>
-            {tooth}
-          </span>
-        )}
-        
-        {/* Tooth SVG */}
-        <svg 
-          width="16" 
-          height="22" 
-          viewBox="0 0 24 26"
-          className="transition-all duration-150 group-hover:scale-110"
-        >
-          <path
-            d={path}
-            fill={getFillColor()}
-            stroke={getStrokeColor()}
-            strokeWidth="1"
-            className="transition-all duration-150"
-          />
-          {/* A/P indicator */}
-          {(abutment || pontic) && (
-            <text
-              x="12"
-              y="15"
-              textAnchor="middle"
-              fontSize="8"
-              fontWeight="bold"
-              fill="white"
-            >
-              {abutment ? 'A' : 'P'}
-            </text>
-          )}
-        </svg>
-        
-        {/* Tooth number on bottom for lower */}
-        {!isUpper && (
-          <span className={cn(
-            "text-[7px] font-medium mt-0.5 leading-none transition-colors",
-            inRange ? (abutment ? "text-primary" : "text-amber-400") : isStart ? "text-primary" : "text-white/30"
-          )}>
-            {tooth}
-          </span>
-        )}
-      </button>
-    )
   }
 
   return (
@@ -275,32 +191,19 @@ export function BridgeSelector({
           {getInstructionText()}
         </div>
 
-        {/* Dental Chart */}
-        <div className="bg-card/50 rounded-xl p-3 border border-border/30">
-          {/* Upper Arch */}
-          <div className="mb-2">
-            <div className="flex justify-center items-end gap-0">
-              {UPPER_TEETH.slice(0, 8).map((tooth) => renderTooth(tooth, true))}
-              <div className="w-1.5 h-6 border-l border-dashed border-white/20 mx-0.5" />
-              {UPPER_TEETH.slice(8).map((tooth) => renderTooth(tooth, true))}
-            </div>
-          </div>
-          
-          {/* Center line */}
-          <div className="flex items-center gap-2 my-2">
-            <div className="flex-1 border-t border-white/10" />
-            <span className="text-[8px] text-white/20">MIDLINE</span>
-            <div className="flex-1 border-t border-white/10" />
-          </div>
-          
-          {/* Lower Arch */}
-          <div>
-            <div className="flex justify-center items-start gap-0">
-              {LOWER_TEETH.slice(0, 8).map((tooth) => renderTooth(tooth, false))}
-              <div className="w-1.5 h-6 border-l border-dashed border-white/20 mx-0.5" />
-              {LOWER_TEETH.slice(8).map((tooth) => renderTooth(tooth, false))}
-            </div>
-          </div>
+        {/* Odontogram */}
+        <div className="bridge-odontogram-wrapper bg-card/50 rounded-xl p-3 border border-border/30 overflow-hidden">
+          <Odontogram
+            onChange={handleOdontogramChange}
+            className="w-full"
+            theme="dark"
+            colors={{
+              selected: '#5ebbbd',
+              hover: '#4a7096',
+              default: '#3d5a7a',
+              stroke: '#5a7a9a',
+            }}
+          />
         </div>
 
         {/* Legend */}
@@ -314,6 +217,26 @@ export function BridgeSelector({
             <span className="text-white/50">Pontic</span>
           </div>
         </div>
+
+        {/* Selected teeth display for bridge */}
+        {bridgeData.units >= 3 && (
+          <div className="mt-3 flex flex-wrap gap-1 justify-center">
+            {[...bridgeData.abutments, ...bridgeData.pontics].sort().map(tooth => (
+              <button
+                key={tooth}
+                onClick={() => onToggleAbutment(tooth)}
+                className={cn(
+                  "px-2 py-1 rounded text-xs font-medium transition-all",
+                  bridgeData.abutments.includes(tooth)
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-amber-500 text-white"
+                )}
+              >
+                {tooth} ({bridgeData.abutments.includes(tooth) ? 'A' : 'P'})
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Summary */}
@@ -348,6 +271,41 @@ export function BridgeSelector({
           </div>
         </motion.div>
       )}
+
+      {/* Custom styles for bridge odontogram */}
+      <style>{`
+        .bridge-odontogram-wrapper svg {
+          width: 100%;
+          height: auto;
+        }
+        
+        /* Style abutment teeth */
+        ${bridgeData.abutments.map(tooth => `
+          .bridge-odontogram-wrapper [data-tooth="${tooth}"] path,
+          .bridge-odontogram-wrapper g[id*="${tooth}"] path {
+            fill: #5ebbbd !important;
+            stroke: #3d9a9c !important;
+          }
+        `).join('')}
+        
+        /* Style pontic teeth */
+        ${bridgeData.pontics.map(tooth => `
+          .bridge-odontogram-wrapper [data-tooth="${tooth}"] path,
+          .bridge-odontogram-wrapper g[id*="${tooth}"] path {
+            fill: #f59e0b !important;
+            stroke: #d97706 !important;
+          }
+        `).join('')}
+        
+        /* Style temp start selection */
+        ${tempStart ? `
+          .bridge-odontogram-wrapper [data-tooth="${tempStart}"] path,
+          .bridge-odontogram-wrapper g[id*="${tempStart}"] path {
+            fill: #5ebbbd80 !important;
+            stroke: #5ebbbd !important;
+          }
+        ` : ''}
+      `}</style>
     </div>
   )
 }
