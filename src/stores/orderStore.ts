@@ -943,6 +943,8 @@ export interface Order {
   estimatedDelivery: Date
   priority: Priority
   totalAmount: number
+  instructions?: string
+  patientName?: string
 }
 
 export const MOCK_ORDERS: Order[] = [
@@ -960,6 +962,8 @@ export const MOCK_ORDERS: Order[] = [
     estimatedDelivery: new Date('2024-01-15'),
     priority: 'normal',
     totalAmount: 18000,
+    patientName: 'Rajesh Kumar',
+    instructions: 'Patient has slight crowding. Please ensure tight contact with adjacent teeth. Match shade with upper central incisors.',
   },
   {
     id: 'ORD-2024-002',
@@ -975,6 +979,8 @@ export const MOCK_ORDERS: Order[] = [
     estimatedDelivery: new Date('2024-01-12'),
     priority: 'urgent',
     totalAmount: 25000,
+    patientName: 'Anita Sharma',
+    instructions: 'Ridge lap pontic design preferred. Abutments have minimal prep - please check for adequate clearance.',
   },
   {
     id: 'ORD-2024-003',

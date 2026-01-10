@@ -7,7 +7,9 @@ import {
   Calendar,
   Clock,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  User
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -165,7 +167,29 @@ export function OrderDetail() {
                   <p className="text-white/40 text-xs">Teeth</p>
                   <p className="font-medium text-white">{order.teeth.join(', ')}</p>
                 </div>
+                {order.patientName && (
+                  <div className="col-span-2">
+                    <p className="text-white/40 text-xs flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      Patient
+                    </p>
+                    <p className="font-medium text-white">{order.patientName}</p>
+                  </div>
+                )}
               </div>
+              
+              {/* Special Instructions */}
+              {order.instructions && (
+                <div className="pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <h4 className="text-sm font-medium text-white">Special Instructions</h4>
+                  </div>
+                  <p className="text-sm text-white/70 leading-relaxed bg-white/5 rounded-xl p-3">
+                    {order.instructions}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
