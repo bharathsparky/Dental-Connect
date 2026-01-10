@@ -45,26 +45,10 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
           transition={{ duration: 0.5 }}
           className="w-full h-full flex flex-col items-center justify-center overflow-hidden relative"
           style={{
-            background: 'linear-gradient(180deg, #7AB4D5 0%, #82BAD9 30%, #7DB5D6 70%, #6FA9CB 100%)'
+            background: 'linear-gradient(180deg, #7AB8D8 0%, #5A9AC5 100%)'
           }}
         >
-          {/* Full-screen Lottie Animation as background */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            {animationData && (
-              <Lottie
-                animationData={animationData}
-                loop={true}
-                style={{ 
-                  width: '145%',
-                  height: '145%',
-                  minWidth: '550px',
-                  marginTop: '-8%'
-                }}
-              />
-            )}
-          </div>
-          
-          {/* Content overlay */}
+          {/* Lottie Animation (now transparent) */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -74,8 +58,16 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
               stiffness: 100,
               delay: 0.2 
             }}
-            className="relative z-10 h-[45%]"
-          />
+            className="relative z-10 w-[90%] max-w-[320px] mb-2"
+          >
+            {animationData && (
+              <Lottie
+                animationData={animationData}
+                loop={true}
+                className="w-full h-full"
+              />
+            )}
+          </motion.div>
 
           {/* App Name */}
           <motion.div
