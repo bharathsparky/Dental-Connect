@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils"
 import { Check, Clock } from "lucide-react"
 import { getMaterialsByCategory } from "@/data/materials"
-import { Badge } from "@/components/ui/badge"
 
 interface MaterialSelectorProps {
   category: string

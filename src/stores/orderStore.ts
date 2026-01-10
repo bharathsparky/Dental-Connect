@@ -87,6 +87,7 @@ export const useOrderStore = create<OrderFormState>((set) => ({
 // Mock orders for demonstration
 export interface Order {
   id: string
+  labId: string
   labName: string
   labImage: string
   caseType: string
@@ -103,6 +104,7 @@ export interface Order {
 export const MOCK_ORDERS: Order[] = [
   {
     id: 'ORD-2024-001',
+    labId: 'lab-1',
     labName: 'Precision Dental Lab',
     labImage: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=100&h=100&fit=crop',
     caseType: 'Crown',
@@ -117,6 +119,7 @@ export const MOCK_ORDERS: Order[] = [
   },
   {
     id: 'ORD-2024-002',
+    labId: 'lab-2',
     labName: 'Elite Prosthodontics',
     labImage: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=100&h=100&fit=crop',
     caseType: 'Bridge',
@@ -131,6 +134,7 @@ export const MOCK_ORDERS: Order[] = [
   },
   {
     id: 'ORD-2024-003',
+    labId: 'lab-3',
     labName: 'Smile Crafters Lab',
     labImage: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=100&h=100&fit=crop',
     caseType: 'Denture',

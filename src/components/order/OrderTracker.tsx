@@ -85,7 +85,6 @@ export function OrderTracker({ currentStage, className }: OrderTrackerProps) {
 // Compact version for cards - just shows current status
 export function OrderTrackerCompact({ currentStage }: OrderTrackerProps) {
   const currentIndex = ORDER_STAGES.findIndex(s => s.id === currentStage)
-  const currentStatus = ORDER_STAGES[currentIndex]
   
   return (
     <div className="flex items-center gap-2">

@@ -32,8 +32,6 @@ export function ToothChart({ selectedTeeth, onToothClick }: ToothChartProps) {
     removedTeeth.forEach(tooth => onToothClick(tooth))
   }, [onToothClick])
 
-  const initialSelected = selectedTeeth.map(t => `teeth-${t}`)
-
   return (
     <div className="space-y-4">
       {/* Selected teeth summary */}
@@ -53,7 +51,6 @@ export function ToothChart({ selectedTeeth, onToothClick }: ToothChartProps) {
         <div className="odontogram-wrapper">
           <Odontogram 
             onChange={handleChange}
-            initialSelected={initialSelected}
             className="w-full"
           />
         </div>
