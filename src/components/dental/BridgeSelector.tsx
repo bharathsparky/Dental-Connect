@@ -86,24 +86,12 @@ export function BridgeSelector({
     const svg = wrapper.querySelector('svg')
     if (!svg) return
 
-    // Debug: log ALL elements with IDs in the SVG
-    const allElements = svg.querySelectorAll('[id]')
-    console.log('All SVG elements with IDs:', Array.from(allElements).map(el => ({ tag: el.tagName, id: el.id })).slice(0, 20))
+    // The library uses CLASS names like "teeth-11", "teeth-21", not IDs
+    // Query all groups that have a class starting with "teeth-"
+    const allToothGroups = svg.querySelectorAll('g[class*="teeth-"]')
     
-    // Also check for data attributes
-    const allGroups = svg.querySelectorAll('g')
-    console.log('All g elements:', allGroups.length, 'First few:', Array.from(allGroups).slice(0, 5).map(g => ({ id: g.id, class: g.className, 'data-tooth': g.getAttribute('data-tooth') })))
-
-    // Reset ALL teeth to default color first - try multiple selectors
-    let toothElements = svg.querySelectorAll('g[id^="teeth-"]')
-    if (toothElements.length === 0) {
-      toothElements = svg.querySelectorAll('g[data-tooth]')
-    }
-    if (toothElements.length === 0) {
-      toothElements = svg.querySelectorAll('g[class*="tooth"]')
-    }
-    console.log('Tooth elements found:', toothElements.length)
-    allGroups.forEach(group => {
+    // Reset ALL teeth to default color first
+    allToothGroups.forEach(group => {
       const paths = group.querySelectorAll('path')
       paths.forEach(path => {
         (path as SVGPathElement).style.setProperty('fill', '#3d5a7a', 'important')
@@ -111,9 +99,15 @@ export function BridgeSelector({
       })
     })
 
+    // Helper to find tooth group by FDI number using class selector
+    const findToothGroup = (toothFDI: string): Element | null => {
+      // The library uses class="teeth-XY" where XY is the FDI notation
+      return svg.querySelector(`g.teeth-${toothFDI}`)
+    }
+
     // Color temp start (first tooth selected, waiting for second) - Cyan
     if (tempStart && selectionStep === 'end') {
-      const startGroup = svg.querySelector(`g[id="teeth-${tempStart}"]`)
+      const startGroup = findToothGroup(tempStart)
       if (startGroup) {
         const paths = startGroup.querySelectorAll('path')
         paths.forEach(path => {
@@ -125,7 +119,7 @@ export function BridgeSelector({
 
     // Color abutments - Cyan
     bridgeData.abutments.forEach(tooth => {
-      const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
+      const group = findToothGroup(tooth)
       if (group) {
         const paths = group.querySelectorAll('path')
         paths.forEach(path => {
@@ -137,7 +131,7 @@ export function BridgeSelector({
 
     // Color pontics - Amber  
     bridgeData.pontics.forEach(tooth => {
-      const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
+      const group = findToothGroup(tooth)
       if (group) {
         const paths = group.querySelectorAll('path')
         paths.forEach(path => {
