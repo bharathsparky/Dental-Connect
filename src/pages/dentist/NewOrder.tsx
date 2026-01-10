@@ -34,7 +34,7 @@ import { BleachingTraySelector, SportsGuardSelector, ClearAlignerSelector, Provi
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
 import { useOrderStore } from "@/stores/orderStore"
-import type { BridgeType, CaseType } from "@/stores/orderStore"
+import type { BridgeType, CaseType, ImpressionMaterial } from "@/stores/orderStore"
 import { MOCK_LABS, getLabById } from "@/data/mockLabs"
 import { getMaterialById } from "@/data/materials"
 import { getShadeByCode } from "@/data/vitaShades"
@@ -110,6 +110,51 @@ export function NewOrder() {
   const [labSearch, setLabSearch] = useState('')
   const [labServiceFilter, setLabServiceFilter] = useState('All')
   const [labSortBy, setLabSortBy] = useState('rating')
+
+  // Auto-advance handlers for single-selection screens
+  const handleLabSelect = (labId: string) => {
+    store.setLabId(labId)
+    // Small delay for visual feedback before advancing
+    setTimeout(() => store.setStep(2), 150)
+  }
+
+  const handleCaseTypeSelect = (caseType: CaseType) => {
+    store.setCaseType(caseType)
+    setTimeout(() => store.setStep(3), 150)
+  }
+
+  const handleMaterialSelect = (materialId: string) => {
+    store.setMaterial(materialId)
+    // Skip shade step if not needed for this case type
+    // Check if shade needed based on case type and the material being selected
+    const skipShade = (store.caseType && NO_SHADE_CASE_TYPES.includes(store.caseType)) || 
+                      materialId === 'full-metal'
+    setTimeout(() => {
+      if (skipShade) {
+        store.setStep(7) // Skip to patient info
+      } else {
+        store.setStep(6)
+      }
+    }, 150)
+  }
+
+  const handleShadeSelect = (shade: string) => {
+    store.setShade(shade)
+    setTimeout(() => store.setStep(7), 150)
+  }
+
+  const handleImpressionSelect = (hasImpression: boolean) => {
+    store.setHasImpression(hasImpression)
+    if (!hasImpression) {
+      store.setImpressionMaterial(null)
+    }
+    setTimeout(() => store.setStep(5), 150)
+  }
+
+  const handleImpressionMaterialSelect = (material: ImpressionMaterial) => {
+    store.setImpressionMaterial(material)
+    setTimeout(() => store.setStep(5), 150)
+  }
 
   // Check if shade is needed for this case type
   const needsShade = () => {
@@ -385,7 +430,7 @@ export function NewOrder() {
               const LabItem = ({ lab }: { lab: typeof MOCK_LABS[0] }) => (
                 <motion.button
                   key={lab.id}
-                  onClick={() => store.setLabId(lab.id)}
+                  onClick={() => handleLabSelect(lab.id)}
                   className={cn(
                     "w-full text-left rounded-2xl border transition-all",
                     store.labId === lab.id
@@ -563,7 +608,7 @@ export function NewOrder() {
                         {categoryTypes.map((type) => (
                           <motion.button
                             key={type.id}
-                            onClick={() => store.setCaseType(type.id)}
+                            onClick={() => handleCaseTypeSelect(type.id)}
                             className={cn(
                               "w-full text-left p-4 rounded-2xl border transition-all",
                               store.caseType === type.id
@@ -754,7 +799,7 @@ export function NewOrder() {
                     <motion.button
                       onClick={() => store.setHasImpression(true)}
                       className={cn(
-                        "p-4 rounded-2xl border transition-all text-center",
+                        "p-4 rounded-2xl border transition-all text-center cursor-pointer",
                         store.hasImpression
                           ? "bg-selected border-primary/50"
                           : "bg-card border-border/50 hover:border-white/20"
@@ -775,10 +820,7 @@ export function NewOrder() {
                     </motion.button>
                     
                     <motion.button
-                      onClick={() => {
-                        store.setHasImpression(false)
-                        store.setImpressionMaterial(null)
-                      }}
+                      onClick={() => handleImpressionSelect(false)}
                       className={cn(
                         "p-4 rounded-2xl border transition-all text-center",
                         !store.hasImpression && store.hasImpression !== undefined
@@ -805,7 +847,7 @@ export function NewOrder() {
                       {IMPRESSION_MATERIALS.map((material) => (
                         <motion.button
                           key={material.id}
-                          onClick={() => store.setImpressionMaterial(material.id as typeof store.impressionMaterial)}
+                          onClick={() => handleImpressionMaterialSelect(material.id as ImpressionMaterial)}
                           className={cn(
                             "w-full text-left p-4 rounded-2xl border transition-all",
                             store.impressionMaterial === material.id
@@ -904,7 +946,7 @@ export function NewOrder() {
               <MaterialSelector
                 category={store.caseType}
                 value={store.material}
-                onChange={store.setMaterial}
+                onChange={handleMaterialSelect}
               />
             )}
 
@@ -912,7 +954,7 @@ export function NewOrder() {
             {store.step === 6 && needsShade() && (
               <ShadeGuide
                 value={store.shade}
-                onChange={store.setShade}
+                onChange={handleShadeSelect}
               />
             )}
 
