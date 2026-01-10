@@ -79,6 +79,12 @@ export function BridgeSelector({
     }
   }, [bridgeData.units, bridgeData.startTooth])
 
+  // Helper to set fill/stroke with !important priority
+  const setToothColor = (path: SVGPathElement, fill: string, stroke: string) => {
+    path.style.setProperty('fill', fill, 'important')
+    path.style.setProperty('stroke', stroke, 'important')
+  }
+
   // Apply custom colors AFTER render using useLayoutEffect
   useLayoutEffect(() => {
     const wrapper = wrapperRef.current
@@ -94,8 +100,7 @@ export function BridgeSelector({
       allGroups.forEach(group => {
         const paths = group.querySelectorAll('path')
         paths.forEach(path => {
-          (path as SVGPathElement).style.fill = '#3d5a7a';
-          (path as SVGPathElement).style.stroke = '#5a7a9a';
+          setToothColor(path as SVGPathElement, '#3d5a7a', '#5a7a9a')
         })
       })
 
@@ -105,8 +110,7 @@ export function BridgeSelector({
         if (startGroup) {
           const paths = startGroup.querySelectorAll('path')
           paths.forEach(path => {
-            (path as SVGPathElement).style.fill = '#5ebbbd';
-            (path as SVGPathElement).style.stroke = '#4aa8aa';
+            setToothColor(path as SVGPathElement, '#5ebbbd', '#4aa8aa')
           })
         }
       }
@@ -117,8 +121,7 @@ export function BridgeSelector({
         if (group) {
           const paths = group.querySelectorAll('path')
           paths.forEach(path => {
-            (path as SVGPathElement).style.fill = '#5ebbbd';
-            (path as SVGPathElement).style.stroke = '#3d9a9c';
+            setToothColor(path as SVGPathElement, '#5ebbbd', '#3d9a9c')
           })
         }
       })
@@ -129,12 +132,11 @@ export function BridgeSelector({
         if (group) {
           const paths = group.querySelectorAll('path')
           paths.forEach(path => {
-            (path as SVGPathElement).style.fill = '#f59e0b';
-            (path as SVGPathElement).style.stroke = '#d97706';
+            setToothColor(path as SVGPathElement, '#f59e0b', '#d97706')
           })
         }
       })
-    }, 50) // Small delay for SVG render
+    }, 100) // Increased delay for SVG render
 
     return () => clearTimeout(timer)
   }, [bridgeData.abutments, bridgeData.pontics, tempStart, selectionStep, colorKey])
