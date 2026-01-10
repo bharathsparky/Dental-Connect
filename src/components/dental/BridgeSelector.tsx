@@ -269,8 +269,8 @@ export function BridgeSelector({
         </div>
 
         {/* Odontogram Chart - SAME as ToothChart */}
-        <div className="rounded-2xl p-4 overflow-hidden bg-card/30 border border-border/30">
-          <div ref={wrapperRef} className="bridge-odontogram">
+        <div className="rounded-2xl p-4 overflow-hidden">
+          <div ref={wrapperRef} className="odontogram-wrapper">
             <Odontogram
               onChange={handleChange}
               className="w-full"
@@ -355,36 +355,32 @@ export function BridgeSelector({
         </motion.div>
       )}
 
-      {/* Same styles as ToothChart */}
+      {/* Same styles as ToothChart - uses odontogram-wrapper class */}
       <style>{`
-        .bridge-odontogram svg {
+        .odontogram-wrapper svg {
           width: 100%;
           height: auto;
         }
         
-        .bridge-odontogram .Odontogram__tooltip,
-        .bridge-odontogram [class*="tooltip"] {
+        .odontogram-wrapper .Odontogram__tooltip,
+        .odontogram-wrapper [class*="tooltip"] {
           display: none !important;
         }
         
-        .bridge-odontogram svg path {
+        .odontogram-wrapper svg path {
+          fill: #3d5a7a;
+          stroke: #5a7a9a;
           stroke-width: 1;
-          transition: all 0.15s ease;
+          transition: all 0.2s ease;
           cursor: pointer;
         }
         
-        .bridge-odontogram svg path:hover {
-          filter: brightness(1.15);
+        .odontogram-wrapper svg path:hover {
+          fill: #4a7096;
         }
         
-        .bridge-odontogram svg text {
+        .odontogram-wrapper svg text {
           display: none !important;
-        }
-        
-        /* Override library's selected state - we handle colors manually */
-        .bridge-odontogram svg [aria-selected="true"] path,
-        .bridge-odontogram svg g[aria-selected="true"] path {
-          /* Don't apply default selected color - we set colors via JS */
         }
       `}</style>
     </div>
