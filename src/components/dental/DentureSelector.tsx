@@ -3,7 +3,7 @@ import { Odontogram } from "react-odontogram"
 import { motion } from "motion/react"
 import { Check, AlertCircle, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { DentureData, DentureType, DentureArch, ClaspDesign, DentureStage, BasePlateType, AttachmentType, TeethMould } from "@/stores/orderStore"
+import type { DentureData, DentureType, DentureArch, ClaspDesign, DentureStage, BasePlateType, AttachmentType, TeethMould, ObturatorType, DefectClass, DefectExtent, RetentionMethod } from "@/stores/orderStore"
 
 interface DentureSelectorProps {
   dentureData: DentureData
@@ -501,51 +501,164 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
-          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-            <p className="text-sm text-amber-400 font-medium mb-1">Obturator Prosthesis</p>
-            <p className="text-xs text-white/60">
-              Used to close palatal/maxillary defects (post-maxillectomy, cleft palate, trauma). 
-              Obturators are specifically designed for the upper jaw to separate the oral and nasal cavities.
-            </p>
-          </div>
-          
-          {/* Auto-select maxillary for obturators */}
+          {/* Obturator Type/Stage */}
           <div>
-            <h3 className="text-sm font-medium text-white mb-3">Defect Location</h3>
-            <button
-              onClick={() => onDentureDataChange({ arch: 'upper' })}
-              className={cn(
-                "w-full p-4 rounded-xl border transition-all text-left",
-                dentureData.arch === 'upper'
-                  ? "bg-selected border-primary/50"
-                  : "bg-card border-border/50 hover:border-white/20"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={cn(
-                    "font-medium text-sm mb-1",
-                    dentureData.arch === 'upper' ? "text-primary" : "text-white"
-                  )}>
-                    Maxillary (Upper Jaw)
-                  </p>
-                  <p className="text-[10px] text-white/50">Hard palate, soft palate, or combined defect</p>
-                </div>
-                {dentureData.arch === 'upper' && (
-                  <Check className="w-5 h-5 text-primary" />
-                )}
-              </div>
-            </button>
-            
-            <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10">
-              <div className="flex gap-2">
-                <Info className="w-4 h-4 text-white/40 flex-shrink-0 mt-0.5" />
-                <p className="text-[10px] text-white/50">
-                  <span className="text-white/70 font-medium">Note:</span> Mandibular defects are typically managed with reconstruction plates, bone grafts, or mandibular guide flange prostheses rather than obturators.
-                </p>
-              </div>
+            <h3 className="text-sm font-medium text-white mb-3">Obturator Type</h3>
+            <div className="space-y-2">
+              {[
+                { id: 'surgical', label: 'Surgical Obturator', description: 'Immediate post-op, placed at surgery' },
+                { id: 'interim', label: 'Interim/Transitional', description: 'During healing, 2-6 months post-op' },
+                { id: 'definitive', label: 'Definitive Obturator', description: 'Final prosthesis after complete healing' },
+              ].map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => onDentureDataChange({ 
+                    arch: 'upper',
+                    obturatorType: type.id as ObturatorType
+                  })}
+                  className={cn(
+                    "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                    dentureData.obturatorType === type.id
+                      ? "bg-selected border-primary/50"
+                      : "bg-card border-border/50 hover:border-white/20"
+                  )}
+                >
+                  <div>
+                    <p className={cn(
+                      "font-medium text-sm",
+                      dentureData.obturatorType === type.id ? "text-primary" : "text-white"
+                    )}>
+                      {type.label}
+                    </p>
+                    <p className="text-xs text-white/50">{type.description}</p>
+                  </div>
+                  {dentureData.obturatorType === type.id && (
+                    <Check className="w-4 h-4 text-primary" />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Defect Classification - Aramany */}
+          {dentureData.obturatorType && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h3 className="text-sm font-medium text-white mb-3">Defect Classification</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'class_1', label: 'Class I', description: 'Midline, teeth on one side' },
+                  { id: 'class_2', label: 'Class II', description: 'Unilateral, teeth on both sides' },
+                  { id: 'class_3', label: 'Class III', description: 'Central palate, teeth on both sides' },
+                  { id: 'class_4', label: 'Class IV', description: 'Crosses midline bilaterally' },
+                  { id: 'class_5', label: 'Class V', description: 'Bilateral posterior' },
+                  { id: 'class_6', label: 'Class VI', description: 'Anterior, premaxilla' },
+                ].map((defect) => (
+                  <button
+                    key={defect.id}
+                    onClick={() => onDentureDataChange({ defectClass: defect.id as DefectClass })}
+                    className={cn(
+                      "p-3 rounded-xl border transition-all text-left",
+                      dentureData.defectClass === defect.id
+                        ? "bg-selected border-primary/50"
+                        : "bg-card border-border/50 hover:border-white/20"
+                    )}
+                  >
+                    <p className={cn(
+                      "font-medium text-xs",
+                      dentureData.defectClass === defect.id ? "text-primary" : "text-white"
+                    )}>
+                      {defect.label}
+                    </p>
+                    <p className="text-[9px] text-white/50 mt-0.5">{defect.description}</p>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Defect Extent */}
+          {dentureData.defectClass && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h3 className="text-sm font-medium text-white mb-3">Defect Extent</h3>
+              <div className="space-y-2">
+                {[
+                  { id: 'hard_palate', label: 'Hard Palate Only' },
+                  { id: 'soft_palate', label: 'Soft Palate Only' },
+                  { id: 'hard_soft', label: 'Hard & Soft Palate' },
+                  { id: 'with_alveolus', label: 'Includes Alveolar Ridge' },
+                ].map((extent) => (
+                  <button
+                    key={extent.id}
+                    onClick={() => onDentureDataChange({ defectExtent: extent.id as DefectExtent })}
+                    className={cn(
+                      "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                      dentureData.defectExtent === extent.id
+                        ? "bg-selected border-primary/50"
+                        : "bg-card border-border/50 hover:border-white/20"
+                    )}
+                  >
+                    <p className={cn(
+                      "font-medium text-sm",
+                      dentureData.defectExtent === extent.id ? "text-primary" : "text-white"
+                    )}>
+                      {extent.label}
+                    </p>
+                    {dentureData.defectExtent === extent.id && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Retention Method */}
+          {dentureData.defectExtent && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h3 className="text-sm font-medium text-white mb-3">Retention Method</h3>
+              <div className="space-y-2">
+                {[
+                  { id: 'remaining_teeth', label: 'Remaining Teeth', description: 'Clasps on natural teeth' },
+                  { id: 'implant_retained', label: 'Implant Retained', description: 'Attachments on implants' },
+                  { id: 'anatomical', label: 'Anatomical Undercuts', description: 'Defect edges, scar tissue' },
+                  { id: 'combination', label: 'Combination', description: 'Multiple retention methods' },
+                ].map((retention) => (
+                  <button
+                    key={retention.id}
+                    onClick={() => onDentureDataChange({ retentionMethod: retention.id as RetentionMethod })}
+                    className={cn(
+                      "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                      dentureData.retentionMethod === retention.id
+                        ? "bg-selected border-primary/50"
+                        : "bg-card border-border/50 hover:border-white/20"
+                    )}
+                  >
+                    <div>
+                      <p className={cn(
+                        "font-medium text-sm",
+                        dentureData.retentionMethod === retention.id ? "text-primary" : "text-white"
+                      )}>
+                        {retention.label}
+                      </p>
+                      <p className="text-xs text-white/50">{retention.description}</p>
+                    </div>
+                    {dentureData.retentionMethod === retention.id && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       )}
 
@@ -688,7 +801,7 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
         (dentureData.dentureType === 'immediate' && dentureData.arch) ||
         (dentureData.dentureType === 'partial' && dentureData.missingTeeth && dentureData.missingTeeth.length > 0 && dentureData.basePlateType) ||
         (dentureData.dentureType === 'overdenture' && dentureData.implantPositions && dentureData.implantPositions.length > 0 && dentureData.attachmentType) ||
-        (dentureData.dentureType === 'obturator' && dentureData.arch)) && (
+        (dentureData.dentureType === 'obturator' && dentureData.obturatorType && dentureData.retentionMethod)) && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -700,7 +813,7 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
               : dentureData.dentureType === 'immediate'
               ? `Immediate ${dentureData.arch === 'both' ? 'Upper & Lower' : (dentureData.arch ? dentureData.arch.charAt(0).toUpperCase() + dentureData.arch.slice(1) : '')} Denture`
               : dentureData.dentureType === 'obturator'
-              ? `${dentureData.arch === 'upper' ? 'Maxillary' : 'Mandibular'} Obturator`
+              ? `${dentureData.obturatorType === 'surgical' ? 'Surgical' : dentureData.obturatorType === 'interim' ? 'Interim' : 'Definitive'} Maxillary Obturator`
               : dentureData.dentureType === 'overdenture'
               ? `${dentureData.arch === 'upper' ? 'Maxillary' : 'Mandibular'} Overdenture`
               : `Partial Denture`
@@ -740,6 +853,22 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
                 <div>
                   <span className="text-white/50">Attachment:</span>
                   <span className="text-white ml-1">{ATTACHMENT_TYPES.find(a => a.id === dentureData.attachmentType)?.label}</span>
+                </div>
+              </>
+            )}
+            {dentureData.dentureType === 'obturator' && (
+              <>
+                <div>
+                  <span className="text-white/50">Class:</span>
+                  <span className="text-white ml-1">{dentureData.defectClass?.replace('class_', 'Class ').toUpperCase()}</span>
+                </div>
+                <div>
+                  <span className="text-white/50">Extent:</span>
+                  <span className="text-white ml-1 capitalize">{dentureData.defectExtent?.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-white/50">Retention:</span>
+                  <span className="text-white ml-1 capitalize">{dentureData.retentionMethod?.replace(/_/g, ' ')}</span>
                 </div>
               </>
             )}

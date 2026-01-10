@@ -58,6 +58,12 @@ export interface BridgeData {
   immediateProvisionalization: boolean  // Need immediate temporary bridge?
 }
 
+// Obturator-specific types
+export type ObturatorType = 'surgical' | 'interim' | 'definitive' | null
+export type DefectClass = 'class_1' | 'class_2' | 'class_3' | 'class_4' | 'class_5' | 'class_6' | null
+export type DefectExtent = 'hard_palate' | 'soft_palate' | 'hard_soft' | 'with_alveolus' | null
+export type RetentionMethod = 'remaining_teeth' | 'implant_retained' | 'anatomical' | 'combination' | null
+
 // Denture-specific data
 export interface DentureData {
   dentureType: DentureType
@@ -70,6 +76,11 @@ export interface DentureData {
   attachmentType: AttachmentType  // For overdentures
   teethMould: TeethMould  // Teeth shape preference
   teethSize: 'small' | 'medium' | 'large' | null
+  // Obturator-specific fields
+  obturatorType: ObturatorType
+  defectClass: DefectClass
+  defectExtent: DefectExtent
+  retentionMethod: RetentionMethod
 }
 
 // Implant-specific data
@@ -438,6 +449,11 @@ const initialDentureData: DentureData = {
   attachmentType: null,
   teethMould: null,
   teethSize: null,
+  // Obturator fields
+  obturatorType: null,
+  defectClass: null,
+  defectExtent: null,
+  retentionMethod: null,
 }
 
 const initialImplantData: ImplantData = {
