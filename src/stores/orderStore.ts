@@ -2,12 +2,15 @@ import { create } from 'zustand'
 
 export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | null
 export type Priority = 'normal' | 'urgent' | 'rush'
+export type ImpressionMaterial = 'alginate' | 'pvs' | 'polyether' | 'digital_scan' | null
 
 export interface OrderFormState {
   step: number
   labId: string | null
   caseType: CaseType
   selectedTeeth: string[]
+  hasImpression: boolean
+  impressionMaterial: ImpressionMaterial
   material: string | null
   shade: string | null
   photos: string[]
@@ -26,6 +29,8 @@ export interface OrderFormState {
   setCaseType: (caseType: CaseType) => void
   setSelectedTeeth: (teeth: string[]) => void
   toggleTooth: (tooth: string) => void
+  setHasImpression: (hasImpression: boolean) => void
+  setImpressionMaterial: (material: ImpressionMaterial) => void
   setMaterial: (material: string) => void
   setShade: (shade: string) => void
   addPhoto: (photo: string) => void
@@ -42,6 +47,8 @@ const initialState = {
   labId: null,
   caseType: null as CaseType,
   selectedTeeth: [] as string[],
+  hasImpression: false,
+  impressionMaterial: null as ImpressionMaterial,
   material: null,
   shade: null,
   photos: [] as string[],
@@ -57,7 +64,7 @@ export const useOrderStore = create<OrderFormState>((set) => ({
   ...initialState,
   
   setStep: (step) => set({ step }),
-  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 7) })),
+  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 8) })),
   prevStep: () => set((state) => ({ step: Math.max(state.step - 1, 1) })),
   setLabId: (labId) => set({ labId }),
   setCaseType: (caseType) => set({ caseType }),
@@ -67,6 +74,8 @@ export const useOrderStore = create<OrderFormState>((set) => ({
       ? state.selectedTeeth.filter(t => t !== tooth)
       : [...state.selectedTeeth, tooth]
   })),
+  setHasImpression: (hasImpression) => set({ hasImpression }),
+  setImpressionMaterial: (impressionMaterial) => set({ impressionMaterial }),
   setMaterial: (material) => set({ material }),
   setShade: (shade) => set({ shade }),
   addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),

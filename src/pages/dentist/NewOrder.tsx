@@ -32,10 +32,18 @@ const STEPS = [
   { id: 1, title: 'Select Lab' },
   { id: 2, title: 'Case Type' },
   { id: 3, title: 'Teeth' },
-  { id: 4, title: 'Material' },
-  { id: 5, title: 'Shade' },
-  { id: 6, title: 'Details' },
-  { id: 7, title: 'Review' },
+  { id: 4, title: 'Impression' },
+  { id: 5, title: 'Material' },
+  { id: 6, title: 'Shade' },
+  { id: 7, title: 'Details' },
+  { id: 8, title: 'Review' },
+]
+
+const IMPRESSION_MATERIALS = [
+  { id: 'alginate', label: 'Alginate', description: 'Cost-effective, good for study models' },
+  { id: 'pvs', label: 'PVS (Addition Silicone)', description: 'High accuracy, ideal for crowns & bridges' },
+  { id: 'polyether', label: 'Polyether', description: 'Excellent detail, good for implants' },
+  { id: 'digital_scan', label: 'Digital Scan', description: 'Intraoral scanner, fastest turnaround' },
 ]
 
 const CASE_TYPES = [
@@ -62,10 +70,11 @@ export function NewOrder() {
       case 1: return !!store.labId
       case 2: return !!store.caseType
       case 3: return store.selectedTeeth.length > 0
-      case 4: return !!store.material
-      case 5: return !!store.shade
-      case 6: return true
+      case 4: return store.hasImpression && !!store.impressionMaterial
+      case 5: return !!store.material
+      case 6: return !!store.shade
       case 7: return true
+      case 8: return true
       default: return false
     }
   }
@@ -117,7 +126,7 @@ export function NewOrder() {
           </button>
           
           <div className="text-center">
-            <p className="text-xs text-white/50">Step {store.step} of 7</p>
+            <p className="text-xs text-white/50">Step {store.step} of 8</p>
             <h1 className="font-semibold text-sm text-white">{STEPS[store.step - 1].title}</h1>
           </div>
           
@@ -137,7 +146,7 @@ export function NewOrder() {
           <motion.div
             className="h-full bg-primary rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: `${(store.step / 7) * 100}%` }}
+            animate={{ width: `${(store.step / 8) * 100}%` }}
           />
         </div>
       </div>
@@ -306,8 +315,99 @@ export function NewOrder() {
               />
             )}
 
-            {/* Step 4: Material */}
-            {store.step === 4 && store.caseType && (
+            {/* Step 4: Impression */}
+            {store.step === 4 && (
+              <div className="space-y-6">
+                {/* Has Impression */}
+                <div>
+                  <h3 className="font-medium text-white mb-3">Do you have an impression ready?</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <motion.button
+                      onClick={() => store.setHasImpression(true)}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all text-center",
+                        store.hasImpression
+                          ? "bg-selected border-primary/50"
+                          : "bg-card border-border/50 hover:border-white/20"
+                      )}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className={cn(
+                        "text-2xl mb-2",
+                        store.hasImpression ? "text-primary" : "text-white/60"
+                      )}>
+                        ✓
+                      </div>
+                      <p className={cn(
+                        "font-medium",
+                        store.hasImpression ? "text-primary" : "text-white"
+                      )}>
+                        Yes
+                      </p>
+                      <p className="text-xs text-white/50 mt-1">Ready to send</p>
+                    </motion.button>
+                    
+                    <motion.button
+                      onClick={() => {
+                        store.setHasImpression(false)
+                        store.setImpressionMaterial(null)
+                      }}
+                      className={cn(
+                        "p-4 rounded-2xl border transition-all text-center",
+                        !store.hasImpression && store.hasImpression !== undefined
+                          ? "bg-card border-border/50"
+                          : "bg-card border-border/50 hover:border-white/20"
+                      )}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="text-2xl mb-2 text-white/60">✗</div>
+                      <p className="font-medium text-white">No</p>
+                      <p className="text-xs text-white/50 mt-1">Will take later</p>
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Impression Material - show only if hasImpression is true */}
+                {store.hasImpression && (
+                  <div>
+                    <h3 className="font-medium text-white mb-3">Impression Material Used</h3>
+                    <div className="space-y-3">
+                      {IMPRESSION_MATERIALS.map((material) => (
+                        <motion.button
+                          key={material.id}
+                          onClick={() => store.setImpressionMaterial(material.id as typeof store.impressionMaterial)}
+                          className={cn(
+                            "w-full text-left p-4 rounded-2xl border transition-all",
+                            store.impressionMaterial === material.id
+                              ? "bg-selected border-primary/50"
+                              : "bg-card border-border/50 hover:border-white/20"
+                          )}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className={cn(
+                                "font-medium",
+                                store.impressionMaterial === material.id ? "text-primary" : "text-white"
+                              )}>
+                                {material.label}
+                              </p>
+                              <p className="text-sm text-white/50">{material.description}</p>
+                            </div>
+                            {store.impressionMaterial === material.id && (
+                              <Check className="w-5 h-5 text-primary" />
+                            )}
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 5: Material */}
+            {store.step === 5 && store.caseType && (
               <MaterialSelector
                 category={store.caseType}
                 value={store.material}
@@ -315,16 +415,16 @@ export function NewOrder() {
               />
             )}
 
-            {/* Step 5: Shade */}
-            {store.step === 5 && (
+            {/* Step 6: Shade */}
+            {store.step === 6 && (
               <ShadeGuide
                 value={store.shade}
                 onChange={store.setShade}
               />
             )}
 
-            {/* Step 6: Details */}
-            {store.step === 6 && (
+            {/* Step 7: Details */}
+            {store.step === 7 && (
               <div className="space-y-6">
                 <div>
                   <h3 className="font-medium text-white mb-3">Upload Photos</h3>
@@ -387,8 +487,8 @@ export function NewOrder() {
               </div>
             )}
 
-            {/* Step 7: Review */}
-            {store.step === 7 && (
+            {/* Step 8: Review */}
+            {store.step === 8 && (
               <div className="space-y-4">
                 <Card variant="gradient">
                   <CardContent className="p-4 pt-4 space-y-4">
@@ -414,6 +514,12 @@ export function NewOrder() {
                       <div>
                         <p className="text-white/50 text-xs">Teeth</p>
                         <p className="font-medium text-white">{store.selectedTeeth.join(', ')}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/50 text-xs">Impression</p>
+                        <p className="font-medium text-white capitalize">
+                          {IMPRESSION_MATERIALS.find(m => m.id === store.impressionMaterial)?.label || '-'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-white/50 text-xs">Material</p>
@@ -459,10 +565,10 @@ export function NewOrder() {
         <Button
           className="w-full"
           disabled={!canProceed()}
-          onClick={() => store.step === 7 ? handleSubmit() : store.nextStep()}
+          onClick={() => store.step === 8 ? handleSubmit() : store.nextStep()}
         >
-          {store.step === 7 ? 'Place Order' : 'Continue'}
-          {store.step !== 7 && <ChevronRight className="w-4 h-4" />}
+          {store.step === 8 ? 'Place Order' : 'Continue'}
+          {store.step !== 8 && <ChevronRight className="w-4 h-4" />}
         </Button>
       </div>
     </div>
