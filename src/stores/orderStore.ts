@@ -147,7 +147,7 @@ export interface WaxupData {
 }
 
 // Full Mouth Rehabilitation data
-export type FMRStage = 'diagnostic' | 'provisionals' | 'final_upper' | 'final_lower' | 'final_both' | null
+export type FMRStage = 'diagnostic' | 'provisionals' | 'trial_bite' | 'bisque_trial' | 'final_upper' | 'final_lower' | 'final_both' | null
 export type OVDChange = 'maintain' | 'increase_1_2mm' | 'increase_2_4mm' | 'increase_4plus' | null
 export type TreatmentApproach = 'segmented' | 'full_arch' | 'quadrant' | null
 
@@ -175,6 +175,20 @@ export interface FMRData {
   guideplane: 'anterior' | 'canine' | 'group_function' | null
   smileDesign: boolean
   deprogrammer: boolean  // Anterior deprogrammer used?
+  
+  // Trial Bite stage
+  trialBiteArch: 'upper' | 'lower' | 'both' | null
+  trialBiteOVDVerified: boolean
+  trialBiteOcclusionVerified: boolean
+  trialBiteAdjustments: string | null
+  
+  // Bisque Trial stage
+  bisqueTrialArch: 'upper' | 'lower' | 'both' | null
+  bisqueFitCheck: boolean
+  bisqueAestheticCheck: boolean
+  bisqueOcclusionCheck: boolean
+  bisqueShadeVerified: boolean
+  bisqueAdjustments: string | null
 }
 
 // Surgical Guide data
@@ -525,6 +539,18 @@ const initialFMRData: FMRData = {
   guideplane: null,
   smileDesign: false,
   deprogrammer: false,
+  // Trial Bite
+  trialBiteArch: null,
+  trialBiteOVDVerified: false,
+  trialBiteOcclusionVerified: false,
+  trialBiteAdjustments: null,
+  // Bisque Trial
+  bisqueTrialArch: null,
+  bisqueFitCheck: false,
+  bisqueAestheticCheck: false,
+  bisqueOcclusionCheck: false,
+  bisqueShadeVerified: false,
+  bisqueAdjustments: null,
 }
 
 const initialSurgicalGuideData: SurgicalGuideData = {

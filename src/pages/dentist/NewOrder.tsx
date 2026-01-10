@@ -122,10 +122,6 @@ const LAB_DELIVERY_OPTIONS = [
 // Case types that don't need shade selection
 const NO_SHADE_CASE_TYPES: CaseType[] = ['night_guard', 'retainer', 'waxup', 'surgical_guide', 'bleaching_tray', 'sports_guard', 'clear_aligner']
 
-// FMR diagnostic stage doesn't need shade
-const isFMRDiagnosticStage = (caseType: CaseType, fmrStage: string | null) => 
-  caseType === 'full_mouth_rehab' && fmrStage === 'diagnostic'
-
 export function NewOrder() {
   const navigate = useNavigate()
   const store = useOrderStore()
@@ -187,8 +183,9 @@ export function NewOrder() {
   const needsShade = () => {
     if (!store.caseType) return false
     if (NO_SHADE_CASE_TYPES.includes(store.caseType)) return false
-    // FMR diagnostic stage doesn't need shade
-    if (isFMRDiagnosticStage(store.caseType, store.fmrData.stage)) return false
+    // FMR diagnostic and trial_bite stages don't need shade
+    if (store.caseType === 'full_mouth_rehab' && 
+        (store.fmrData.stage === 'diagnostic' || store.fmrData.stage === 'trial_bite')) return false
     // Full metal crown doesn't need shade
     if (store.material === 'full-metal') return false
     // Metal-only restorations don't need shade
@@ -282,6 +279,24 @@ export function NewOrder() {
           case 'waxup':
             return !!store.waxupData.purpose && (store.waxupData.selectedTeeth?.length || 0) > 0
           case 'full_mouth_rehab':
+            // Diagnostic stage: basic info only
+            if (store.fmrData.stage === 'diagnostic') {
+              return !!store.fmrData.stage && 
+                     !!store.fmrData.ovdChange &&
+                     !!store.fmrData.treatmentApproach
+            }
+            // Trial bite stage: arch + at least one verification
+            if (store.fmrData.stage === 'trial_bite') {
+              return !!store.fmrData.trialBiteArch &&
+                     (store.fmrData.trialBiteOVDVerified || store.fmrData.trialBiteOcclusionVerified)
+            }
+            // Bisque trial stage: arch + at least one check
+            if (store.fmrData.stage === 'bisque_trial') {
+              return !!store.fmrData.bisqueTrialArch &&
+                     (store.fmrData.bisqueFitCheck || store.fmrData.bisqueAestheticCheck || 
+                      store.fmrData.bisqueOcclusionCheck || store.fmrData.bisqueShadeVerified)
+            }
+            // Provisionals and final stages: full validation
             return !!store.fmrData.stage && 
                    !!store.fmrData.ovdChange &&
                    !!store.fmrData.treatmentApproach &&

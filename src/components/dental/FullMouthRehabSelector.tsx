@@ -1,7 +1,7 @@
 import { useRef, useCallback } from "react"
 import { Odontogram } from "react-odontogram"
 import { motion } from "motion/react"
-import { Check, AlertCircle, Sparkles, Target, Layers } from "lucide-react"
+import { Check, AlertCircle, Sparkles, Target, Layers, ClipboardCheck, Palette } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FMRData, FMRStage, OVDChange, TreatmentApproach } from "@/stores/orderStore"
 
@@ -24,6 +24,20 @@ const FMR_STAGES = [
     description: 'Temporary restorations at new OVD',
     icon: Layers,
     color: 'bg-amber-500/20 text-amber-400'
+  },
+  { 
+    id: 'trial_bite', 
+    label: 'Trial Bite', 
+    description: 'Verify OVD and occlusion before final',
+    icon: ClipboardCheck,
+    color: 'bg-purple-500/20 text-purple-400'
+  },
+  { 
+    id: 'bisque_trial', 
+    label: 'Bisque Trial', 
+    description: 'Unglazed ceramic try-in for fit & aesthetics',
+    icon: Palette,
+    color: 'bg-pink-500/20 text-pink-400'
   },
   { 
     id: 'final_upper', 
@@ -160,6 +174,274 @@ export function FullMouthRehabSelector({ fmrData, onFMRDataChange }: FullMouthRe
           })}
         </div>
       </div>
+
+      {/* Trial Bite Stage */}
+      {fmrData.stage === 'trial_bite' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+            <p className="text-sm text-purple-400 font-medium mb-1">Trial Bite Stage</p>
+            <p className="text-xs text-white/60">
+              Verify OVD and occlusion after provisional period. Lab will fabricate trial bite rims/plates.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Arch for Trial Bite</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'upper', label: 'Upper' },
+                { id: 'lower', label: 'Lower' },
+                { id: 'both', label: 'Both' },
+              ].map((arch) => (
+                <button
+                  key={arch.id}
+                  onClick={() => onFMRDataChange({ trialBiteArch: arch.id as 'upper' | 'lower' | 'both' })}
+                  className={cn(
+                    "p-3 rounded-xl border transition-all text-center",
+                    fmrData.trialBiteArch === arch.id
+                      ? "bg-selected border-primary/50"
+                      : "bg-card border-border/50 hover:border-white/20"
+                  )}
+                >
+                  <p className={cn(
+                    "font-medium text-sm",
+                    fmrData.trialBiteArch === arch.id ? "text-primary" : "text-white"
+                  )}>
+                    {arch.label}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {fmrData.trialBiteArch && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
+              <h3 className="text-sm font-medium text-white mb-3">Verification Checklist</h3>
+              
+              <button
+                onClick={() => onFMRDataChange({ trialBiteOVDVerified: !fmrData.trialBiteOVDVerified })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3",
+                  fmrData.trialBiteOVDVerified
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
+                  fmrData.trialBiteOVDVerified ? "bg-primary border-primary" : "border-white/30"
+                )}>
+                  {fmrData.trialBiteOVDVerified && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className={cn("font-medium text-sm", fmrData.trialBiteOVDVerified ? "text-primary" : "text-white")}>
+                    OVD Verified
+                  </p>
+                  <p className="text-[10px] text-white/50">Vertical dimension confirmed</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onFMRDataChange({ trialBiteOcclusionVerified: !fmrData.trialBiteOcclusionVerified })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3",
+                  fmrData.trialBiteOcclusionVerified
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
+                  fmrData.trialBiteOcclusionVerified ? "bg-primary border-primary" : "border-white/30"
+                )}>
+                  {fmrData.trialBiteOcclusionVerified && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className={cn("font-medium text-sm", fmrData.trialBiteOcclusionVerified ? "text-primary" : "text-white")}>
+                    Occlusion Verified
+                  </p>
+                  <p className="text-[10px] text-white/50">Centric, lateral, protrusive verified</p>
+                </div>
+              </button>
+
+              <div>
+                <p className="text-xs text-white/60 mb-2">Adjustments Needed (if any)</p>
+                <textarea
+                  value={fmrData.trialBiteAdjustments || ''}
+                  onChange={(e) => onFMRDataChange({ trialBiteAdjustments: e.target.value })}
+                  placeholder="e.g., Increase OVD by 0.5mm, adjust anterior guidance..."
+                  className="w-full p-3 rounded-xl bg-card border border-border/50 text-sm text-white placeholder:text-white/30 focus:border-primary/50 focus:outline-none min-h-[80px] resize-none"
+                />
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Bisque Trial Stage */}
+      {fmrData.stage === 'bisque_trial' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="p-4 bg-pink-500/10 border border-pink-500/30 rounded-xl">
+            <p className="text-sm text-pink-400 font-medium mb-1">Bisque Trial Stage</p>
+            <p className="text-xs text-white/60">
+              Unglazed ceramic try-in for fit, function, and aesthetics before final glazing.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Arch for Bisque Trial</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'upper', label: 'Upper' },
+                { id: 'lower', label: 'Lower' },
+                { id: 'both', label: 'Both' },
+              ].map((arch) => (
+                <button
+                  key={arch.id}
+                  onClick={() => onFMRDataChange({ bisqueTrialArch: arch.id as 'upper' | 'lower' | 'both' })}
+                  className={cn(
+                    "p-3 rounded-xl border transition-all text-center",
+                    fmrData.bisqueTrialArch === arch.id
+                      ? "bg-selected border-primary/50"
+                      : "bg-card border-border/50 hover:border-white/20"
+                  )}
+                >
+                  <p className={cn(
+                    "font-medium text-sm",
+                    fmrData.bisqueTrialArch === arch.id ? "text-primary" : "text-white"
+                  )}>
+                    {arch.label}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {fmrData.bisqueTrialArch && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
+              <h3 className="text-sm font-medium text-white mb-3">Try-In Checklist</h3>
+              
+              <button
+                onClick={() => onFMRDataChange({ bisqueFitCheck: !fmrData.bisqueFitCheck })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3",
+                  fmrData.bisqueFitCheck
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
+                  fmrData.bisqueFitCheck ? "bg-primary border-primary" : "border-white/30"
+                )}>
+                  {fmrData.bisqueFitCheck && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className={cn("font-medium text-sm", fmrData.bisqueFitCheck ? "text-primary" : "text-white")}>
+                    Fit Check
+                  </p>
+                  <p className="text-[10px] text-white/50">Margins, contacts, seating verified</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onFMRDataChange({ bisqueAestheticCheck: !fmrData.bisqueAestheticCheck })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3",
+                  fmrData.bisqueAestheticCheck
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
+                  fmrData.bisqueAestheticCheck ? "bg-primary border-primary" : "border-white/30"
+                )}>
+                  {fmrData.bisqueAestheticCheck && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className={cn("font-medium text-sm", fmrData.bisqueAestheticCheck ? "text-primary" : "text-white")}>
+                    Aesthetic Check
+                  </p>
+                  <p className="text-[10px] text-white/50">Shape, size, contour, symmetry</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onFMRDataChange({ bisqueOcclusionCheck: !fmrData.bisqueOcclusionCheck })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3",
+                  fmrData.bisqueOcclusionCheck
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
+                  fmrData.bisqueOcclusionCheck ? "bg-primary border-primary" : "border-white/30"
+                )}>
+                  {fmrData.bisqueOcclusionCheck && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className={cn("font-medium text-sm", fmrData.bisqueOcclusionCheck ? "text-primary" : "text-white")}>
+                    Occlusion Check
+                  </p>
+                  <p className="text-[10px] text-white/50">Centric, excursive movements verified</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onFMRDataChange({ bisqueShadeVerified: !fmrData.bisqueShadeVerified })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3",
+                  fmrData.bisqueShadeVerified
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0",
+                  fmrData.bisqueShadeVerified ? "bg-primary border-primary" : "border-white/30"
+                )}>
+                  {fmrData.bisqueShadeVerified && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <div>
+                  <p className={cn("font-medium text-sm", fmrData.bisqueShadeVerified ? "text-primary" : "text-white")}>
+                    Shade Verified
+                  </p>
+                  <p className="text-[10px] text-white/50">Color match confirmed</p>
+                </div>
+              </button>
+
+              <div>
+                <p className="text-xs text-white/60 mb-2">Adjustments Needed (if any)</p>
+                <textarea
+                  value={fmrData.bisqueAdjustments || ''}
+                  onChange={(e) => onFMRDataChange({ bisqueAdjustments: e.target.value })}
+                  placeholder="e.g., Reduce incisal length on 11, 21 by 0.5mm, adjust shade on 12..."
+                  className="w-full p-3 rounded-xl bg-card border border-border/50 text-sm text-white placeholder:text-white/30 focus:border-primary/50 focus:outline-none min-h-[80px] resize-none"
+                />
+              </div>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
 
       {/* Diagnostic Records - For diagnostic phase */}
       {fmrData.stage === 'diagnostic' && (
