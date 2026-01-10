@@ -1,6 +1,8 @@
+import { useState } from "react"
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom"
 import { MobileFrame } from "./components/layout/MobileFrame"
 import { BottomNav } from "./components/layout/BottomNav"
+import { SplashScreen } from "./components/SplashScreen"
 import { Home } from "./pages/dentist/Home"
 import { Labs } from "./pages/dentist/Labs"
 import { Orders } from "./pages/dentist/Orders"
@@ -35,8 +37,13 @@ function AppContent() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true)
+
   return (
     <BrowserRouter>
+      {showSplash && (
+        <SplashScreen onComplete={() => setShowSplash(false)} />
+      )}
       <MobileFrame>
         <AppContent />
       </MobileFrame>
