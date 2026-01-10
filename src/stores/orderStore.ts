@@ -1,15 +1,32 @@
 import { create } from 'zustand'
 
-export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | null
+export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup' | null
 export type Priority = 'normal' | 'urgent' | 'rush'
 export type ImpressionMaterial = 'alginate' | 'pvs' | 'polyether' | 'digital_scan' | null
-export type DentureType = 'full' | 'partial' | 'obturator' | null
+export type DentureType = 'full' | 'partial' | 'immediate' | 'overdenture' | 'obturator' | null
 export type DentureArch = 'upper' | 'lower' | 'both' | null
 export type BridgeType = 'conventional' | 'cantilever' | 'maryland' | null
+export type PonticDesign = 'ridge_lap' | 'modified_ridge_lap' | 'sanitary' | 'ovate' | null
+export type MarginType = 'shoulder' | 'chamfer' | 'knife_edge' | 'feather_edge' | null
+export type CrownSubtype = 'full' | 'three_quarter' | null
+export type VeneerType = 'porcelain' | 'composite' | 'minimal_prep' | 'no_prep' | null
+export type InlayOnlayType = 'inlay' | 'onlay' | 'overlay' | null
+export type NightGuardType = 'soft' | 'hard' | 'dual_laminate' | null
+export type RetainerType = 'hawley' | 'essix' | 'fixed_bonded' | null
+export type ClaspDesign = 'c_clasp' | 'i_bar' | 'wrought_wire' | 'precision_attachment' | null
+export type ImplantRestorationType = 'screw_retained' | 'cement_retained' | null
+export type ConnectionType = 'internal_hex' | 'external_hex' | 'morse_taper' | 'multi_unit' | null
+
+// Crown-specific data
+export interface CrownData {
+  crownSubtype: CrownSubtype
+  marginType: MarginType
+}
 
 // Bridge-specific data
 export interface BridgeData {
   bridgeType: BridgeType
+  ponticDesign: PonticDesign
   startTooth: string | null
   endTooth: string | null
   abutments: string[]  // Teeth that are present (will get crowns)
@@ -22,6 +39,8 @@ export interface DentureData {
   dentureType: DentureType
   arch: DentureArch
   missingTeeth: string[]  // For partial dentures
+  claspDesign: ClaspDesign  // For partial dentures
+  implantPositions: string[]  // For overdentures
 }
 
 // Implant-specific data
@@ -29,6 +48,39 @@ export interface ImplantData {
   positions: string[]
   implantSystem: string | null
   abutmentType: string | null
+  restorationType: ImplantRestorationType
+  connectionType: ConnectionType
+}
+
+// Veneer-specific data
+export interface VeneerData {
+  veneerType: VeneerType
+  selectedTeeth: string[]
+}
+
+// Inlay/Onlay-specific data
+export interface InlayOnlayData {
+  type: InlayOnlayType
+  selectedTeeth: string[]
+}
+
+// Night Guard/Splint data
+export interface NightGuardData {
+  guardType: NightGuardType
+  arch: DentureArch
+  thickness: 'thin' | 'medium' | 'thick' | null
+}
+
+// Retainer data
+export interface RetainerData {
+  retainerType: RetainerType
+  arch: DentureArch
+}
+
+// Wax-up/Study Model data
+export interface WaxupData {
+  purpose: 'diagnostic' | 'provisional' | 'smile_design' | null
+  selectedTeeth: string[]
 }
 
 export interface OrderFormState {
@@ -36,8 +88,14 @@ export interface OrderFormState {
   labId: string | null
   caseType: CaseType
   
+  // Patient Info (important for aesthetics decisions)
+  patientName: string
+  patientAge: string
+  patientGender: 'male' | 'female' | 'other' | null
+  
   // Crown: individual teeth selection
   selectedTeeth: string[]
+  crownData: CrownData
   
   // Bridge-specific
   bridgeData: BridgeData
@@ -48,17 +106,35 @@ export interface OrderFormState {
   // Implant-specific
   implantData: ImplantData
   
+  // Veneer-specific
+  veneerData: VeneerData
+  
+  // Inlay/Onlay-specific
+  inlayOnlayData: InlayOnlayData
+  
+  // Night Guard-specific
+  nightGuardData: NightGuardData
+  
+  // Retainer-specific
+  retainerData: RetainerData
+  
+  // Wax-up-specific
+  waxupData: WaxupData
+  
+  // Impression & Material
   hasImpression: boolean
   impressionMaterial: ImpressionMaterial
+  hasBiteRegistration: boolean
+  hasOpposingModel: boolean
   material: string | null
   shade: string | null
+  stumpShade: string | null
+  
+  // Additional details
   photos: string[]
   instructions: string
   priority: Priority
   deliveryDate: Date | null
-  patientName: string
-  patientAge: string
-  patientGender: 'male' | 'female' | 'other' | null
   
   // Actions
   setStep: (step: number) => void
@@ -66,10 +142,12 @@ export interface OrderFormState {
   prevStep: () => void
   setLabId: (labId: string) => void
   setCaseType: (caseType: CaseType) => void
+  setPatientInfo: (name: string, age: string, gender: 'male' | 'female' | 'other') => void
   
   // Crown actions
   setSelectedTeeth: (teeth: string[]) => void
   toggleTooth: (tooth: string) => void
+  setCrownData: (data: Partial<CrownData>) => void
   
   // Bridge actions
   setBridgeData: (data: Partial<BridgeData>) => void
@@ -83,24 +161,50 @@ export interface OrderFormState {
   setImplantData: (data: Partial<ImplantData>) => void
   toggleImplantPosition: (position: string) => void
   
+  // Veneer actions
+  setVeneerData: (data: Partial<VeneerData>) => void
+  
+  // Inlay/Onlay actions
+  setInlayOnlayData: (data: Partial<InlayOnlayData>) => void
+  
+  // Night Guard actions
+  setNightGuardData: (data: Partial<NightGuardData>) => void
+  
+  // Retainer actions
+  setRetainerData: (data: Partial<RetainerData>) => void
+  
+  // Wax-up actions
+  setWaxupData: (data: Partial<WaxupData>) => void
+  
   setHasImpression: (hasImpression: boolean) => void
   setImpressionMaterial: (material: ImpressionMaterial) => void
+  setHasBiteRegistration: (has: boolean) => void
+  setHasOpposingModel: (has: boolean) => void
   setMaterial: (material: string) => void
   setShade: (shade: string) => void
+  setStumpShade: (shade: string) => void
   addPhoto: (photo: string) => void
   removePhoto: (index: number) => void
   setInstructions: (instructions: string) => void
   setPriority: (priority: Priority) => void
   setDeliveryDate: (date: Date) => void
-  setPatientInfo: (name: string, age: string, gender: 'male' | 'female' | 'other') => void
   reset: () => void
   
   // Helper to get display summary of teeth selection
   getTeethSummary: () => string
+  
+  // Helper to check if shade is needed for this case type
+  needsShade: () => boolean
+}
+
+const initialCrownData: CrownData = {
+  crownSubtype: 'full',
+  marginType: null,
 }
 
 const initialBridgeData: BridgeData = {
   bridgeType: 'conventional',
+  ponticDesign: null,
   startTooth: null,
   endTooth: null,
   abutments: [],
@@ -112,33 +216,72 @@ const initialDentureData: DentureData = {
   dentureType: null,
   arch: null,
   missingTeeth: [],
+  claspDesign: null,
+  implantPositions: [],
 }
 
 const initialImplantData: ImplantData = {
   positions: [],
   implantSystem: null,
   abutmentType: null,
+  restorationType: null,
+  connectionType: null,
+}
+
+const initialVeneerData: VeneerData = {
+  veneerType: null,
+  selectedTeeth: [],
+}
+
+const initialInlayOnlayData: InlayOnlayData = {
+  type: null,
+  selectedTeeth: [],
+}
+
+const initialNightGuardData: NightGuardData = {
+  guardType: null,
+  arch: null,
+  thickness: null,
+}
+
+const initialRetainerData: RetainerData = {
+  retainerType: null,
+  arch: null,
+}
+
+const initialWaxupData: WaxupData = {
+  purpose: null,
+  selectedTeeth: [],
 }
 
 const initialState = {
   step: 1,
   labId: null,
   caseType: null as CaseType,
+  patientName: '',
+  patientAge: '',
+  patientGender: null as 'male' | 'female' | 'other' | null,
   selectedTeeth: [] as string[],
+  crownData: { ...initialCrownData },
   bridgeData: { ...initialBridgeData },
   dentureData: { ...initialDentureData },
   implantData: { ...initialImplantData },
+  veneerData: { ...initialVeneerData },
+  inlayOnlayData: { ...initialInlayOnlayData },
+  nightGuardData: { ...initialNightGuardData },
+  retainerData: { ...initialRetainerData },
+  waxupData: { ...initialWaxupData },
   hasImpression: false,
   impressionMaterial: null as ImpressionMaterial,
+  hasBiteRegistration: false,
+  hasOpposingModel: false,
   material: null,
   shade: null,
+  stumpShade: null,
   photos: [] as string[],
   instructions: '',
   priority: 'normal' as Priority,
   deliveryDate: null,
-  patientName: '',
-  patientAge: '',
-  patientGender: null as 'male' | 'female' | 'other' | null,
 }
 
 // Helper to get all teeth in a range (FDI notation)
@@ -173,16 +316,27 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
   ...initialState,
   
   setStep: (step) => set({ step }),
-  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 8) })),
+  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 9) })),
   prevStep: () => set((state) => ({ step: Math.max(state.step - 1, 1) })),
   setLabId: (labId) => set({ labId }),
   setCaseType: (caseType) => set({ 
     caseType,
     // Reset case-specific data when changing type
     selectedTeeth: [],
+    crownData: { ...initialCrownData },
     bridgeData: { ...initialBridgeData },
     dentureData: { ...initialDentureData },
     implantData: { ...initialImplantData },
+    veneerData: { ...initialVeneerData },
+    inlayOnlayData: { ...initialInlayOnlayData },
+    nightGuardData: { ...initialNightGuardData },
+    retainerData: { ...initialRetainerData },
+    waxupData: { ...initialWaxupData },
+  }),
+  setPatientInfo: (patientName, patientAge, patientGender) => set({ 
+    patientName, 
+    patientAge, 
+    patientGender 
   }),
   
   // Crown actions
@@ -191,6 +345,9 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     selectedTeeth: state.selectedTeeth.includes(tooth)
       ? state.selectedTeeth.filter(t => t !== tooth)
       : [...state.selectedTeeth, tooth]
+  })),
+  setCrownData: (data) => set((state) => ({
+    crownData: { ...state.crownData, ...data }
   })),
   
   // Bridge actions
@@ -265,10 +422,38 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     }
   })),
   
+  // Veneer actions
+  setVeneerData: (data) => set((state) => ({
+    veneerData: { ...state.veneerData, ...data }
+  })),
+  
+  // Inlay/Onlay actions
+  setInlayOnlayData: (data) => set((state) => ({
+    inlayOnlayData: { ...state.inlayOnlayData, ...data }
+  })),
+  
+  // Night Guard actions
+  setNightGuardData: (data) => set((state) => ({
+    nightGuardData: { ...state.nightGuardData, ...data }
+  })),
+  
+  // Retainer actions
+  setRetainerData: (data) => set((state) => ({
+    retainerData: { ...state.retainerData, ...data }
+  })),
+  
+  // Wax-up actions
+  setWaxupData: (data) => set((state) => ({
+    waxupData: { ...state.waxupData, ...data }
+  })),
+  
   setHasImpression: (hasImpression) => set({ hasImpression }),
   setImpressionMaterial: (impressionMaterial) => set({ impressionMaterial }),
+  setHasBiteRegistration: (hasBiteRegistration) => set({ hasBiteRegistration }),
+  setHasOpposingModel: (hasOpposingModel) => set({ hasOpposingModel }),
   setMaterial: (material) => set({ material }),
   setShade: (shade) => set({ shade }),
+  setStumpShade: (stumpShade) => set({ stumpShade }),
   addPhoto: (photo) => set((state) => ({ photos: [...state.photos, photo] })),
   removePhoto: (index) => set((state) => ({ 
     photos: state.photos.filter((_, i) => i !== index) 
@@ -276,16 +461,17 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
   setInstructions: (instructions) => set({ instructions }),
   setPriority: (priority) => set({ priority }),
   setDeliveryDate: (deliveryDate) => set({ deliveryDate }),
-  setPatientInfo: (patientName, patientAge, patientGender) => set({ 
-    patientName, 
-    patientAge, 
-    patientGender 
-  }),
   reset: () => set({
     ...initialState,
+    crownData: { ...initialCrownData },
     bridgeData: { ...initialBridgeData },
     dentureData: { ...initialDentureData },
     implantData: { ...initialImplantData },
+    veneerData: { ...initialVeneerData },
+    inlayOnlayData: { ...initialInlayOnlayData },
+    nightGuardData: { ...initialNightGuardData },
+    retainerData: { ...initialRetainerData },
+    waxupData: { ...initialWaxupData },
   }),
   
   // Helper to get display summary
@@ -306,15 +492,51 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
           return `Full ${state.dentureData.arch || ''} denture`
         } else if (state.dentureData.dentureType === 'partial') {
           return `Partial denture (${state.dentureData.missingTeeth.length} teeth)`
+        } else if (state.dentureData.dentureType === 'immediate') {
+          return `Immediate denture - ${state.dentureData.arch || ''}`
+        } else if (state.dentureData.dentureType === 'overdenture') {
+          return `Overdenture - ${state.dentureData.implantPositions.length} implants`
+        } else if (state.dentureData.dentureType === 'obturator') {
+          return `Obturator - ${state.dentureData.arch || ''}`
         }
         return 'Not configured'
       case 'implant':
         return state.implantData.positions.length > 0
           ? `Implants: ${state.implantData.positions.sort().join(', ')}`
           : 'No positions selected'
+      case 'veneer':
+        return state.veneerData.selectedTeeth.length > 0
+          ? state.veneerData.selectedTeeth.sort().join(', ')
+          : 'No teeth selected'
+      case 'inlay_onlay':
+        return state.inlayOnlayData.selectedTeeth.length > 0
+          ? `${state.inlayOnlayData.type || ''}: ${state.inlayOnlayData.selectedTeeth.sort().join(', ')}`
+          : 'No teeth selected'
+      case 'night_guard':
+        return `${state.nightGuardData.guardType || ''} guard - ${state.nightGuardData.arch || ''}`
+      case 'retainer':
+        return `${state.retainerData.retainerType || ''} - ${state.retainerData.arch || ''}`
+      case 'waxup':
+        return state.waxupData.selectedTeeth.length > 0
+          ? `${state.waxupData.purpose || ''}: ${state.waxupData.selectedTeeth.sort().join(', ')}`
+          : 'Not configured'
       default:
         return ''
     }
+  },
+  
+  // Helper to check if shade is needed
+  needsShade: () => {
+    const state = get()
+    // Night guards, retainers, and full metal don't need shade
+    if (state.caseType === 'night_guard' || state.caseType === 'retainer') {
+      return false
+    }
+    // Check if material is full metal
+    if (state.material === 'full-metal') {
+      return false
+    }
+    return true
   },
 }))
 

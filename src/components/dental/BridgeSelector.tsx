@@ -3,11 +3,12 @@ import { motion } from "motion/react"
 import { Check, ArrowRight, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Odontogram } from "react-odontogram"
-import type { BridgeData, BridgeType } from "@/stores/orderStore"
+import type { BridgeData, BridgeType, PonticDesign } from "@/stores/orderStore"
 
 interface BridgeSelectorProps {
   bridgeData: BridgeData
   onBridgeTypeChange: (type: BridgeType) => void
+  onBridgeDataChange: (data: Partial<BridgeData>) => void
   onRangeSelect: (start: string, end: string) => void
   onToggleAbutment: (tooth: string) => void
   onReset: () => void
@@ -27,6 +28,13 @@ const BRIDGE_TYPES = [
   { id: 'conventional', label: 'Conventional', description: 'Abutments on both sides' },
   { id: 'cantilever', label: 'Cantilever', description: 'Abutment on one side only' },
   { id: 'maryland', label: 'Maryland', description: 'Wings bonded to adjacent teeth' },
+]
+
+const PONTIC_DESIGNS = [
+  { id: 'ridge_lap', label: 'Ridge Lap', description: 'Covers ridge, concave fit surface' },
+  { id: 'modified_ridge_lap', label: 'Modified Ridge Lap', description: 'Convex labial, concave lingual' },
+  { id: 'sanitary', label: 'Sanitary (Hygienic)', description: 'No ridge contact, easy clean' },
+  { id: 'ovate', label: 'Ovate', description: 'Convex, sits in prepared socket' },
 ]
 
 // Get all teeth in a range (same quadrant)
@@ -55,7 +63,8 @@ function getTeethInRange(start: string, end: string): string[] {
 
 export function BridgeSelector({ 
   bridgeData, 
-  onBridgeTypeChange, 
+  onBridgeTypeChange,
+  onBridgeDataChange,
   onRangeSelect,
   onToggleAbutment,
   onReset
@@ -343,6 +352,38 @@ export function BridgeSelector({
         )}
       </div>
 
+      {/* Pontic Design */}
+      {bridgeData.units >= 3 && bridgeData.pontics.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3 className="text-sm font-medium text-white mb-2">Pontic Design</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {PONTIC_DESIGNS.map((design) => (
+              <button
+                key={design.id}
+                onClick={() => onBridgeDataChange({ ponticDesign: design.id as PonticDesign })}
+                className={cn(
+                  "p-3 rounded-xl border transition-all text-left",
+                  bridgeData.ponticDesign === design.id
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <p className={cn(
+                  "font-medium text-xs",
+                  bridgeData.ponticDesign === design.id ? "text-primary" : "text-white"
+                )}>
+                  {design.label}
+                </p>
+                <p className="text-[9px] text-white/50 mt-0.5">{design.description}</p>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Summary */}
       {bridgeData.units >= 3 && (
         <motion.div
@@ -373,6 +414,14 @@ export function BridgeSelector({
               </p>
             </div>
           </div>
+          
+          {bridgeData.ponticDesign && (
+            <div className="mt-2 pt-2 border-t border-white/10">
+              <p className="text-[9px] text-white/50">
+                Pontic Design: {PONTIC_DESIGNS.find(d => d.id === bridgeData.ponticDesign)?.label}
+              </p>
+            </div>
+          )}
         </motion.div>
       )}
 

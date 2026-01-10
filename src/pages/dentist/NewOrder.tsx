@@ -10,20 +10,27 @@ import {
   Clock,
   Star,
   BadgeCheck,
-  Search
+  Search,
+  User,
+  SkipForward
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { ToothChart } from "@/components/dental/ToothChart"
+import { CrownSelector } from "@/components/dental/CrownSelector"
 import { BridgeSelector } from "@/components/dental/BridgeSelector"
 import { DentureSelector } from "@/components/dental/DentureSelector"
 import { ImplantSelector } from "@/components/dental/ImplantSelector"
+import { VeneerSelector } from "@/components/dental/VeneerSelector"
+import { InlayOnlaySelector } from "@/components/dental/InlayOnlaySelector"
+import { NightGuardSelector } from "@/components/dental/NightGuardSelector"
+import { RetainerSelector } from "@/components/dental/RetainerSelector"
+import { WaxupSelector } from "@/components/dental/WaxupSelector"
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
 import { useOrderStore } from "@/stores/orderStore"
-import type { BridgeType } from "@/stores/orderStore"
+import type { BridgeType, CaseType } from "@/stores/orderStore"
 import { MOCK_LABS, getLabById } from "@/data/mockLabs"
 import { getMaterialById } from "@/data/materials"
 import { getShadeByCode } from "@/data/vitaShades"
@@ -39,8 +46,9 @@ const STEPS = [
   { id: 4, title: 'Impression' },
   { id: 5, title: 'Material' },
   { id: 6, title: 'Shade' },
-  { id: 7, title: 'Details' },
-  { id: 8, title: 'Review' },
+  { id: 7, title: 'Patient Info' },
+  { id: 8, title: 'Details' },
+  { id: 9, title: 'Review' },
 ]
 
 const IMPRESSION_MATERIALS = [
@@ -50,11 +58,20 @@ const IMPRESSION_MATERIALS = [
   { id: 'digital_scan', label: 'Digital Scan', description: 'Intraoral scanner, fastest turnaround' },
 ]
 
-const CASE_TYPES = [
-  { id: 'crown', label: 'Crown', description: 'Single/multiple tooth restorations' },
-  { id: 'bridge', label: 'Bridge', description: 'Replace missing teeth with span' },
-  { id: 'denture', label: 'Denture', description: 'Full or partial removable prosthesis' },
-  { id: 'implant', label: 'Implant', description: 'Implant-supported restoration' },
+const CASE_TYPES: { id: CaseType, label: string, description: string, category: 'restoration' | 'prosthetic' | 'appliance' | 'diagnostic' }[] = [
+  // Restorations
+  { id: 'crown', label: 'Crown', description: 'Single/multiple tooth restorations', category: 'restoration' },
+  { id: 'bridge', label: 'Bridge', description: 'Replace missing teeth with span', category: 'restoration' },
+  { id: 'veneer', label: 'Veneer', description: 'Aesthetic front tooth facings', category: 'restoration' },
+  { id: 'inlay_onlay', label: 'Inlay / Onlay', description: 'Conservative cusp coverage', category: 'restoration' },
+  // Prosthetics
+  { id: 'denture', label: 'Denture', description: 'Full or partial removable prosthesis', category: 'prosthetic' },
+  { id: 'implant', label: 'Implant Crown', description: 'Implant-supported restoration', category: 'prosthetic' },
+  // Appliances
+  { id: 'night_guard', label: 'Night Guard', description: 'Bruxism / TMJ protection', category: 'appliance' },
+  { id: 'retainer', label: 'Retainer', description: 'Orthodontic retention', category: 'appliance' },
+  // Diagnostic
+  { id: 'waxup', label: 'Wax-Up / Study', description: 'Diagnostic planning & visualization', category: 'diagnostic' },
 ]
 
 const PRIORITIES = [
@@ -63,12 +80,15 @@ const PRIORITIES = [
   { id: 'rush', label: 'Rush', days: '1-2 days', price: '+50%' },
 ]
 
-const LAB_SERVICE_FILTERS = ['All', 'Crown', 'Bridge', 'Denture', 'Implant']
+const LAB_SERVICE_FILTERS = ['All', 'Crown', 'Bridge', 'Denture', 'Implant', 'Veneer']
 const LAB_SORT_OPTIONS = [
   { id: 'rating', label: 'Top Rated' },
   { id: 'distance', label: 'Nearest' },
   { id: 'turnaround', label: 'Fastest' },
 ]
+
+// Case types that don't need shade selection
+const NO_SHADE_CASE_TYPES: CaseType[] = ['night_guard', 'retainer', 'waxup']
 
 export function NewOrder() {
   const navigate = useNavigate()
@@ -77,6 +97,15 @@ export function NewOrder() {
   const [labSearch, setLabSearch] = useState('')
   const [labServiceFilter, setLabServiceFilter] = useState('All')
   const [labSortBy, setLabSortBy] = useState('rating')
+
+  // Check if shade is needed for this case type
+  const needsShade = () => {
+    if (!store.caseType) return false
+    if (NO_SHADE_CASE_TYPES.includes(store.caseType)) return false
+    // Full metal crown doesn't need shade
+    if (store.material === 'full-metal') return false
+    return true
+  }
 
   // Check if can proceed based on case type
   const canProceed = () => {
@@ -89,18 +118,43 @@ export function NewOrder() {
           case 'crown': return store.selectedTeeth.length > 0
           case 'bridge': return store.bridgeData.units >= 3 // Minimum 3-unit bridge
           case 'denture': 
-            if (store.dentureData.dentureType === 'full' || store.dentureData.dentureType === 'obturator') {
+            if (store.dentureData.dentureType === 'full' || 
+                store.dentureData.dentureType === 'immediate' ||
+                store.dentureData.dentureType === 'obturator') {
               return !!store.dentureData.arch
             }
+            if (store.dentureData.dentureType === 'overdenture') {
+              return (store.dentureData.implantPositions?.length || 0) >= 2
+            }
+            // Partial denture
             return (store.dentureData.missingTeeth?.length || 0) > 0
-          case 'implant': return store.implantData.positions.length > 0
+          case 'implant': 
+            return store.implantData.positions.length > 0 && 
+                   !!store.implantData.implantSystem &&
+                   !!store.implantData.connectionType &&
+                   !!store.implantData.restorationType &&
+                   !!store.implantData.abutmentType
+          case 'veneer':
+            return !!store.veneerData.veneerType && (store.veneerData.selectedTeeth?.length || 0) > 0
+          case 'inlay_onlay':
+            return !!store.inlayOnlayData.type && (store.inlayOnlayData.selectedTeeth?.length || 0) > 0
+          case 'night_guard':
+            return !!store.nightGuardData.guardType && !!store.nightGuardData.arch && !!store.nightGuardData.thickness
+          case 'retainer':
+            return !!store.retainerData.retainerType && !!store.retainerData.arch
+          case 'waxup':
+            return !!store.waxupData.purpose && (store.waxupData.selectedTeeth?.length || 0) > 0
           default: return false
         }
       case 4: return store.hasImpression && !!store.impressionMaterial
       case 5: return !!store.material
-      case 6: return !!store.shade
-      case 7: return true
-      case 8: return true
+      case 6: 
+        // Shade step - can skip for non-aesthetic cases
+        if (!needsShade()) return true
+        return !!store.shade
+      case 7: return true // Patient info is optional but recommended
+      case 8: return true // Details are optional
+      case 9: return true // Review - ready to submit
       default: return false
     }
   }
@@ -111,6 +165,26 @@ export function NewOrder() {
       store.reset()
       navigate('/')
     }, 2000)
+  }
+
+  // Handle next step - skip shade if not needed
+  const handleNextStep = () => {
+    if (store.step === 5 && !needsShade()) {
+      store.setStep(7) // Skip shade step (6), go to patient info (7)
+    } else if (store.step === 9) {
+      handleSubmit()
+    } else {
+      store.nextStep()
+    }
+  }
+
+  // Handle previous step - skip shade if not needed
+  const handlePrevStep = () => {
+    if (store.step === 7 && !needsShade()) {
+      store.setStep(5) // Skip shade step (6), go back to material (5)
+    } else {
+      store.prevStep()
+    }
   }
 
   const selectedLab = store.labId ? getLabById(store.labId) : null
@@ -126,7 +200,13 @@ export function NewOrder() {
         return `${store.bridgeData.units}-unit (${store.bridgeData.startTooth}-${store.bridgeData.endTooth})`
       case 'denture':
         if (store.dentureData.dentureType === 'full') {
-          return `Full ${store.dentureData.arch} arch`
+          return `Full ${store.dentureData.arch} denture`
+        }
+        if (store.dentureData.dentureType === 'immediate') {
+          return `Immediate ${store.dentureData.arch} denture`
+        }
+        if (store.dentureData.dentureType === 'overdenture') {
+          return `Overdenture (${store.dentureData.implantPositions?.length || 0} implants)`
         }
         if (store.dentureData.dentureType === 'obturator') {
           return `${store.dentureData.arch === 'upper' ? 'Maxillary' : 'Mandibular'} Obturator`
@@ -134,10 +214,24 @@ export function NewOrder() {
         return `Partial (${store.dentureData.missingTeeth?.length || 0} teeth)`
       case 'implant':
         return store.implantData.positions.join(', ')
+      case 'veneer':
+        return store.veneerData.selectedTeeth?.join(', ') || '-'
+      case 'inlay_onlay':
+        return `${store.inlayOnlayData.type}: ${store.inlayOnlayData.selectedTeeth?.join(', ') || '-'}`
+      case 'night_guard':
+        return `${store.nightGuardData.arch} arch`
+      case 'retainer':
+        return store.retainerData.arch === 'both' ? 'Both arches' : `${store.retainerData.arch} arch`
+      case 'waxup':
+        return store.waxupData.selectedTeeth?.join(', ') || '-'
       default:
         return '-'
     }
   }
+
+  // Get current total steps (accounting for skipped shade)
+  const totalSteps = needsShade() ? 9 : 8
+  const displayStep = !needsShade() && store.step > 6 ? store.step - 1 : store.step
 
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
@@ -167,14 +261,14 @@ export function NewOrder() {
       <div className="bg-background/80 backdrop-blur-lg z-40">
         <div className="flex items-center justify-between h-14 px-5">
           <button
-            onClick={() => store.step === 1 ? navigate(-1) : store.prevStep()}
+            onClick={() => store.step === 1 ? navigate(-1) : handlePrevStep()}
             className="w-10 h-10 rounded-xl bg-card border border-border/50 flex items-center justify-center"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           
           <div className="text-center">
-            <p className="text-xs text-white/50">Step {store.step} of 8</p>
+            <p className="text-xs text-white/50">Step {displayStep} of {totalSteps}</p>
             <h1 className="font-semibold text-sm text-white">{STEPS[store.step - 1].title}</h1>
           </div>
           
@@ -194,7 +288,7 @@ export function NewOrder() {
           <motion.div
             className="h-full bg-primary rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: `${(store.step / 8) * 100}%` }}
+            animate={{ width: `${(displayStep / totalSteps) * 100}%` }}
           />
         </div>
       </div>
@@ -391,62 +485,84 @@ export function NewOrder() {
 
             {/* Step 2: Case Type */}
             {store.step === 2 && (
-              <div className="space-y-3">
-                <p className="text-sm text-white/50 mb-4">What type of restoration do you need?</p>
-                {CASE_TYPES.map((type) => (
-                  <motion.button
-                    key={type.id}
-                    onClick={() => store.setCaseType(type.id as typeof store.caseType)}
-                    className={cn(
-                      "w-full text-left p-4 rounded-2xl border transition-all",
-                      store.caseType === type.id
-                        ? "bg-selected border-primary/50"
-                        : "bg-card border-border/50 hover:border-white/20"
-                    )}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className={cn(
-                          "font-medium",
-                          store.caseType === type.id ? "text-primary" : "text-white"
-                        )}>
-                          {type.label}
-                        </p>
-                        <p className="text-sm text-white/50">{type.description}</p>
+              <div className="space-y-4">
+                <p className="text-sm text-white/50 mb-2">What type of restoration or appliance do you need?</p>
+                
+                {/* Group by category */}
+                {(['restoration', 'prosthetic', 'appliance', 'diagnostic'] as const).map((category) => {
+                  const categoryTypes = CASE_TYPES.filter(t => t.category === category)
+                  const categoryLabels = {
+                    restoration: 'Fixed Restorations',
+                    prosthetic: 'Prosthetics',
+                    appliance: 'Appliances',
+                    diagnostic: 'Diagnostic'
+                  }
+                  
+                  return (
+                    <div key={category}>
+                      <p className="text-xs text-white/40 uppercase tracking-wider mb-2 px-1">
+                        {categoryLabels[category]}
+                      </p>
+                      <div className="space-y-2 mb-4">
+                        {categoryTypes.map((type) => (
+                          <motion.button
+                            key={type.id}
+                            onClick={() => store.setCaseType(type.id)}
+                            className={cn(
+                              "w-full text-left p-4 rounded-2xl border transition-all",
+                              store.caseType === type.id
+                                ? "bg-selected border-primary/50"
+                                : "bg-card border-border/50 hover:border-white/20"
+                            )}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className={cn(
+                                  "font-medium",
+                                  store.caseType === type.id ? "text-primary" : "text-white"
+                                )}>
+                                  {type.label}
+                                </p>
+                                <p className="text-sm text-white/50">{type.description}</p>
+                              </div>
+                              {store.caseType === type.id && (
+                                <Check className="w-5 h-5 text-primary" />
+                              )}
+                            </div>
+                          </motion.button>
+                        ))}
                       </div>
-                      {store.caseType === type.id && (
-                        <Check className="w-5 h-5 text-primary" />
-                      )}
                     </div>
-                  </motion.button>
-                ))}
+                  )
+                })}
               </div>
             )}
 
-            {/* Step 3: Teeth/Selection - Different UI based on case type */}
+            {/* Step 3: Selection - Different UI based on case type */}
             {store.step === 3 && (
               <div>
-                {/* Crown: Individual tooth selection */}
+                {/* Crown */}
                 {store.caseType === 'crown' && (
-                  <div>
-                    <p className="text-sm text-white/50 mb-4">Select teeth for crown restorations</p>
-                    <ToothChart
-                      selectedTeeth={store.selectedTeeth}
-                      onToothClick={store.toggleTooth}
-                    />
-                  </div>
+                  <CrownSelector
+                    selectedTeeth={store.selectedTeeth}
+                    onToothClick={store.toggleTooth}
+                    crownData={store.crownData}
+                    onCrownDataChange={store.setCrownData}
+                  />
                 )}
 
-                {/* Bridge: Range selection with abutment/pontic */}
+                {/* Bridge */}
                 {store.caseType === 'bridge' && (
                   <BridgeSelector
                     bridgeData={store.bridgeData}
                     onBridgeTypeChange={(type: BridgeType) => store.setBridgeData({ bridgeType: type })}
+                    onBridgeDataChange={store.setBridgeData}
                     onRangeSelect={store.setBridgeRange}
                     onToggleAbutment={store.toggleAbutment}
                     onReset={() => store.setBridgeData({ 
                       bridgeType: 'conventional', 
+                      ponticDesign: null,
                       startTooth: null, 
                       endTooth: null, 
                       abutments: [], 
@@ -456,7 +572,7 @@ export function NewOrder() {
                   />
                 )}
 
-                {/* Denture: Arch/partial selection */}
+                {/* Denture */}
                 {store.caseType === 'denture' && (
                   <DentureSelector
                     dentureData={store.dentureData}
@@ -464,12 +580,52 @@ export function NewOrder() {
                   />
                 )}
 
-                {/* Implant: Position selection with system */}
+                {/* Implant */}
                 {store.caseType === 'implant' && (
                   <ImplantSelector
                     implantData={store.implantData}
                     onImplantDataChange={store.setImplantData}
                     onTogglePosition={store.toggleImplantPosition}
+                  />
+                )}
+
+                {/* Veneer */}
+                {store.caseType === 'veneer' && (
+                  <VeneerSelector
+                    veneerData={store.veneerData}
+                    onVeneerDataChange={store.setVeneerData}
+                  />
+                )}
+
+                {/* Inlay/Onlay */}
+                {store.caseType === 'inlay_onlay' && (
+                  <InlayOnlaySelector
+                    inlayOnlayData={store.inlayOnlayData}
+                    onInlayOnlayDataChange={store.setInlayOnlayData}
+                  />
+                )}
+
+                {/* Night Guard */}
+                {store.caseType === 'night_guard' && (
+                  <NightGuardSelector
+                    nightGuardData={store.nightGuardData}
+                    onNightGuardDataChange={store.setNightGuardData}
+                  />
+                )}
+
+                {/* Retainer */}
+                {store.caseType === 'retainer' && (
+                  <RetainerSelector
+                    retainerData={store.retainerData}
+                    onRetainerDataChange={store.setRetainerData}
+                  />
+                )}
+
+                {/* Wax-Up / Study */}
+                {store.caseType === 'waxup' && (
+                  <WaxupSelector
+                    waxupData={store.waxupData}
+                    onWaxupDataChange={store.setWaxupData}
                   />
                 )}
               </div>
@@ -525,9 +681,12 @@ export function NewOrder() {
                   </div>
                 </div>
 
-                {/* Impression Material - show only if hasImpression is true */}
+                {/* Impression Material */}
                 {store.hasImpression && (
-                  <div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
                     <h3 className="font-medium text-white mb-3">Impression Material Used</h3>
                     <div className="space-y-3">
                       {IMPRESSION_MATERIALS.map((material) => (
@@ -559,7 +718,70 @@ export function NewOrder() {
                         </motion.button>
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
+                )}
+
+                {/* Bite Registration & Opposing Model */}
+                {store.hasImpression && store.impressionMaterial && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-3"
+                  >
+                    <h3 className="font-medium text-white mb-3">Additional Records</h3>
+                    
+                    <button
+                      onClick={() => store.setHasBiteRegistration(!store.hasBiteRegistration)}
+                      className={cn(
+                        "w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between",
+                        store.hasBiteRegistration
+                          ? "bg-selected border-primary/50"
+                          : "bg-card border-border/50 hover:border-white/20"
+                      )}
+                    >
+                      <div>
+                        <p className={cn(
+                          "font-medium",
+                          store.hasBiteRegistration ? "text-primary" : "text-white"
+                        )}>
+                          Bite Registration
+                        </p>
+                        <p className="text-xs text-white/50">Including occlusal records</p>
+                      </div>
+                      <div className={cn(
+                        "w-5 h-5 rounded border-2 flex items-center justify-center",
+                        store.hasBiteRegistration ? "bg-primary border-primary" : "border-white/30"
+                      )}>
+                        {store.hasBiteRegistration && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => store.setHasOpposingModel(!store.hasOpposingModel)}
+                      className={cn(
+                        "w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between",
+                        store.hasOpposingModel
+                          ? "bg-selected border-primary/50"
+                          : "bg-card border-border/50 hover:border-white/20"
+                      )}
+                    >
+                      <div>
+                        <p className={cn(
+                          "font-medium",
+                          store.hasOpposingModel ? "text-primary" : "text-white"
+                        )}>
+                          Opposing Arch Model
+                        </p>
+                        <p className="text-xs text-white/50">For accurate occlusion</p>
+                      </div>
+                      <div className={cn(
+                        "w-5 h-5 rounded border-2 flex items-center justify-center",
+                        store.hasOpposingModel ? "bg-primary border-primary" : "border-white/30"
+                      )}>
+                        {store.hasOpposingModel && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </button>
+                  </motion.div>
                 )}
               </div>
             )}
@@ -574,15 +796,88 @@ export function NewOrder() {
             )}
 
             {/* Step 6: Shade */}
-            {store.step === 6 && (
+            {store.step === 6 && needsShade() && (
               <ShadeGuide
                 value={store.shade}
                 onChange={store.setShade}
               />
             )}
 
-            {/* Step 7: Details */}
+            {/* Step 6 (skipped) - Show message if shade not needed */}
+            {store.step === 6 && !needsShade() && (
+              <div className="text-center py-10">
+                <SkipForward className="w-12 h-12 text-primary/50 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2">Shade Not Required</h3>
+                <p className="text-sm text-white/50">
+                  This case type doesn't require shade selection.
+                </p>
+              </div>
+            )}
+
+            {/* Step 7: Patient Info */}
             {store.step === 7 && (
+              <div className="space-y-6">
+                <div className="p-4 bg-primary/10 border border-primary/30 rounded-xl flex gap-3">
+                  <User className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-primary font-medium mb-1">Patient Information</p>
+                    <p className="text-xs text-white/60">
+                      Patient details help the lab make better aesthetic decisions for shade matching 
+                      and tooth characterization.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-white mb-2 block">Patient Name</label>
+                  <Input
+                    placeholder="Enter patient name (optional)"
+                    value={store.patientName}
+                    onChange={(e) => store.setPatientInfo(e.target.value, store.patientAge, store.patientGender || 'male')}
+                    className="h-12 bg-card border-border/50 rounded-xl"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Age</label>
+                    <Input
+                      placeholder="Age"
+                      type="number"
+                      value={store.patientAge}
+                      onChange={(e) => store.setPatientInfo(store.patientName, e.target.value, store.patientGender || 'male')}
+                      className="h-12 bg-card border-border/50 rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-white mb-2 block">Gender</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(['male', 'female'] as const).map((gender) => (
+                        <button
+                          key={gender}
+                          onClick={() => store.setPatientInfo(store.patientName, store.patientAge, gender)}
+                          className={cn(
+                            "h-12 rounded-xl border transition-all text-sm font-medium",
+                            store.patientGender === gender
+                              ? "bg-selected border-primary/50 text-primary"
+                              : "bg-card border-border/50 text-white/70 hover:border-white/20"
+                          )}
+                        >
+                          {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-white/40 text-center">
+                  This information is optional but recommended for better results
+                </p>
+              </div>
+            )}
+
+            {/* Step 8: Details */}
+            {store.step === 8 && (
               <div className="space-y-6">
                 <div>
                   <h3 className="font-medium text-white mb-3">Upload Photos</h3>
@@ -597,6 +892,9 @@ export function NewOrder() {
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-white/40 mt-2">
+                    Prep photos, shade tabs, patient smile photos
+                  </p>
                 </div>
 
                 <div>
@@ -634,19 +932,19 @@ export function NewOrder() {
                 </div>
 
                 <div>
-                  <h3 className="font-medium text-white mb-3">Notes</h3>
+                  <h3 className="font-medium text-white mb-3">Special Instructions</h3>
                   <textarea
                     value={store.instructions}
                     onChange={(e) => store.setInstructions(e.target.value)}
-                    placeholder="Special instructions..."
-                    className="w-full h-20 p-4 rounded-xl bg-card border border-border/50 resize-none text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50"
+                    placeholder="Contact preferences, stump shade, occlusion notes, characterization requests..."
+                    className="w-full h-24 p-4 rounded-xl bg-card border border-border/50 resize-none text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50"
                   />
                 </div>
               </div>
             )}
 
-            {/* Step 8: Review */}
-            {store.step === 8 && (
+            {/* Step 9: Review */}
+            {store.step === 9 && (
               <div className="space-y-4">
                 <Card variant="gradient">
                   <CardContent className="p-4 pt-4 space-y-4">
@@ -667,7 +965,9 @@ export function NewOrder() {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-white/50 text-xs">Case Type</p>
-                        <p className="font-medium text-white capitalize">{store.caseType}</p>
+                        <p className="font-medium text-white capitalize">
+                          {CASE_TYPES.find(t => t.id === store.caseType)?.label}
+                        </p>
                       </div>
                       <div>
                         <p className="text-white/50 text-xs">Selection</p>
@@ -690,10 +990,18 @@ export function NewOrder() {
                       
                       {/* Implant-specific details */}
                       {store.caseType === 'implant' && store.implantData.implantSystem && (
-                        <div>
-                          <p className="text-white/50 text-xs">Implant System</p>
-                          <p className="font-medium text-white capitalize">{store.implantData.implantSystem}</p>
-                        </div>
+                        <>
+                          <div>
+                            <p className="text-white/50 text-xs">Implant System</p>
+                            <p className="font-medium text-white capitalize">{store.implantData.implantSystem}</p>
+                          </div>
+                          <div>
+                            <p className="text-white/50 text-xs">Restoration Type</p>
+                            <p className="font-medium text-white capitalize">
+                              {store.implantData.restorationType?.replace('_', '-')}
+                            </p>
+                          </div>
+                        </>
                       )}
                       
                       <div>
@@ -704,18 +1012,34 @@ export function NewOrder() {
                       </div>
                       <div>
                         <p className="text-white/50 text-xs">Material</p>
-                        <p className="font-medium text-white">{selectedMaterial?.name}</p>
+                        <p className="font-medium text-white">{selectedMaterial?.name || '-'}</p>
                       </div>
-                      <div>
-                        <p className="text-white/50 text-xs">Shade</p>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded border border-white/20"
-                            style={{ backgroundColor: selectedShade?.hex }}
-                          />
-                          <p className="font-medium text-white">{store.shade}</p>
+                      
+                      {needsShade() && (
+                        <div>
+                          <p className="text-white/50 text-xs">Shade</p>
+                          <div className="flex items-center gap-2">
+                            {selectedShade && (
+                              <div 
+                                className="w-4 h-4 rounded border border-white/20"
+                                style={{ backgroundColor: selectedShade.hex }}
+                              />
+                            )}
+                            <p className="font-medium text-white">{store.shade || '-'}</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {store.patientName && (
+                        <div>
+                          <p className="text-white/50 text-xs">Patient</p>
+                          <p className="font-medium text-white">
+                            {store.patientName}
+                            {store.patientAge && `, ${store.patientAge}y`}
+                            {store.patientGender && ` (${store.patientGender.charAt(0).toUpperCase()})`}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-4 border-t border-white/10 flex items-center justify-between">
@@ -724,6 +1048,13 @@ export function NewOrder() {
                         {store.priority}
                       </Badge>
                     </div>
+
+                    {store.instructions && (
+                      <div className="pt-4 border-t border-white/10">
+                        <p className="text-white/50 text-xs mb-1">Notes</p>
+                        <p className="text-sm text-white/80">{store.instructions}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -746,10 +1077,10 @@ export function NewOrder() {
         <Button
           className="w-full"
           disabled={!canProceed()}
-          onClick={() => store.step === 8 ? handleSubmit() : store.nextStep()}
+          onClick={handleNextStep}
         >
-          {store.step === 8 ? 'Place Order' : 'Continue'}
-          {store.step !== 8 && <ChevronRight className="w-4 h-4" />}
+          {store.step === 9 ? 'Place Order' : 'Continue'}
+          {store.step !== 9 && <ChevronRight className="w-4 h-4" />}
         </Button>
       </div>
     </div>
