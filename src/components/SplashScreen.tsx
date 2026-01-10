@@ -45,7 +45,7 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
           transition={{ duration: 0.5 }}
           className="w-full h-full flex flex-col items-center justify-center overflow-hidden relative"
           style={{
-            background: 'linear-gradient(180deg, #7AB8D8 0%, #5A9AC5 100%)'
+            background: 'linear-gradient(180deg, #0a0a0f 0%, #0d1117 50%, #0a0a0f 100%)'
           }}
         >
           {/* Lottie Animation (now transparent) */}
@@ -76,15 +76,14 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
             transition={{ delay: 0.5, duration: 0.5 }}
             className="text-center relative z-10"
           >
-            <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#1a3a4a' }}>
-              Dent<span style={{ color: '#0d5c6e' }}>Connect</span>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Dent<span className="text-primary">Connect</span>
             </h1>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.5 }}
-              className="text-sm mt-2"
-              style={{ color: '#1a3a4a99' }}
+              className="text-sm mt-2 text-white/50"
             >
               Seamless Dental Lab Orders
             </motion.p>
@@ -101,11 +100,10 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
               {[0, 1, 2].map((i) => (
                 <motion.div
                   key={i}
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: '#1a3a4a' }}
+                  className="w-2.5 h-2.5 rounded-full bg-primary"
                   animate={{
                     scale: [1, 1.3, 1],
-                    opacity: [0.4, 1, 0.4]
+                    opacity: [0.5, 1, 0.5]
                   }}
                   transition={{
                     duration: 0.8,
