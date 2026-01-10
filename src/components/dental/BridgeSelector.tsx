@@ -279,19 +279,25 @@ export function BridgeSelector({
           height: auto;
         }
         
-        /* Style abutment teeth */
+        /* Style abutment teeth - target by exact ID */
         ${bridgeData.abutments.map(tooth => `
-          .bridge-odontogram-wrapper [data-tooth="${tooth}"] path,
-          .bridge-odontogram-wrapper g[id*="${tooth}"] path {
+          .bridge-odontogram-wrapper #teeth-${tooth} path {
+            fill: #5ebbbd !important;
+            stroke: #3d9a9c !important;
+          }
+          .bridge-odontogram-wrapper g#teeth-${tooth} path {
             fill: #5ebbbd !important;
             stroke: #3d9a9c !important;
           }
         `).join('')}
         
-        /* Style pontic teeth */
+        /* Style pontic teeth - target by exact ID */
         ${bridgeData.pontics.map(tooth => `
-          .bridge-odontogram-wrapper [data-tooth="${tooth}"] path,
-          .bridge-odontogram-wrapper g[id*="${tooth}"] path {
+          .bridge-odontogram-wrapper #teeth-${tooth} path {
+            fill: #f59e0b !important;
+            stroke: #d97706 !important;
+          }
+          .bridge-odontogram-wrapper g#teeth-${tooth} path {
             fill: #f59e0b !important;
             stroke: #d97706 !important;
           }
@@ -299,8 +305,11 @@ export function BridgeSelector({
         
         /* Style temp start selection */
         ${tempStart ? `
-          .bridge-odontogram-wrapper [data-tooth="${tempStart}"] path,
-          .bridge-odontogram-wrapper g[id*="${tempStart}"] path {
+          .bridge-odontogram-wrapper #teeth-${tempStart} path {
+            fill: #5ebbbd80 !important;
+            stroke: #5ebbbd !important;
+          }
+          .bridge-odontogram-wrapper g#teeth-${tempStart} path {
             fill: #5ebbbd80 !important;
             stroke: #5ebbbd !important;
           }
