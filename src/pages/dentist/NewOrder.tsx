@@ -110,6 +110,7 @@ export function NewOrder() {
   const [labSearch, setLabSearch] = useState('')
   const [labServiceFilter, setLabServiceFilter] = useState('All')
   const [labSortBy, setLabSortBy] = useState('rating')
+  const [caseTypeSearch, setCaseTypeSearch] = useState('')
 
   // Auto-advance handlers for single-selection screens
   const handleLabSelect = (labId: string) => {
@@ -587,56 +588,139 @@ export function NewOrder() {
             {/* Step 2: Case Type */}
             {store.step === 2 && (
               <div className="space-y-4">
-                <p className="text-sm text-white/50 mb-2">What type of restoration or appliance do you need?</p>
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Input
+                    placeholder="Search case types..."
+                    value={caseTypeSearch}
+                    onChange={(e) => setCaseTypeSearch(e.target.value)}
+                    className="pl-10 h-11 bg-card border-border/50 rounded-xl text-sm"
+                  />
+                  {caseTypeSearch && (
+                    <button
+                      onClick={() => setCaseTypeSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
                 
-                {/* Group by category */}
-                {(['restoration', 'prosthetic', 'appliance', 'diagnostic'] as const).map((category) => {
-                  const categoryTypes = CASE_TYPES.filter(t => t.category === category)
-                  const categoryLabels = {
-                    restoration: 'Fixed Restorations',
-                    prosthetic: 'Prosthetics',
-                    appliance: 'Appliances',
-                    diagnostic: 'Diagnostic'
-                  }
-                  
-                  return (
-                    <div key={category}>
-                      <p className="text-xs text-white/40 uppercase tracking-wider mb-2 px-1">
-                        {categoryLabels[category]}
-                      </p>
-                      <div className="space-y-2 mb-4">
-                        {categoryTypes.map((type) => (
-                          <motion.button
-                            key={type.id}
-                            onClick={() => handleCaseTypeSelect(type.id)}
-                            className={cn(
-                              "w-full text-left p-4 rounded-2xl border transition-all",
-                              store.caseType === type.id
-                                ? "bg-selected border-primary/50"
-                                : "bg-card border-border/50 hover:border-white/20"
-                            )}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className={cn(
-                                  "font-medium",
-                                  store.caseType === type.id ? "text-primary" : "text-white"
-                                )}>
-                                  {type.label}
-                                </p>
-                                <p className="text-sm text-white/50">{type.description}</p>
-                              </div>
-                              {store.caseType === type.id && (
-                                <Check className="w-5 h-5 text-primary" />
+                {/* Filter case types based on search */}
+                {(() => {
+                  const searchLower = caseTypeSearch.toLowerCase().trim()
+                  const filteredTypes = searchLower
+                    ? CASE_TYPES.filter(t => 
+                        t.label.toLowerCase().includes(searchLower) ||
+                        t.description.toLowerCase().includes(searchLower) ||
+                        t.category.toLowerCase().includes(searchLower)
+                      )
+                    : CASE_TYPES
+
+                  // If searching, show flat list; otherwise group by category
+                  if (searchLower) {
+                    return (
+                      <div className="space-y-2">
+                        {filteredTypes.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Search className="w-8 h-8 text-white/20 mx-auto mb-2" />
+                            <p className="text-sm text-white/50">No case types found</p>
+                            <p className="text-xs text-white/30 mt-1">Try a different search term</p>
+                          </div>
+                        ) : (
+                          filteredTypes.map((type) => (
+                            <motion.button
+                              key={type.id}
+                              onClick={() => {
+                                setCaseTypeSearch('')
+                                handleCaseTypeSelect(type.id)
+                              }}
+                              className={cn(
+                                "w-full text-left p-4 rounded-2xl border transition-all",
+                                store.caseType === type.id
+                                  ? "bg-selected border-primary/50"
+                                  : "bg-card border-border/50 hover:border-white/20"
                               )}
-                            </div>
-                          </motion.button>
-                        ))}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <p className={cn(
+                                      "font-medium",
+                                      store.caseType === type.id ? "text-primary" : "text-white"
+                                    )}>
+                                      {type.label}
+                                    </p>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 uppercase">
+                                      {type.category}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-white/50">{type.description}</p>
+                                </div>
+                                {store.caseType === type.id && (
+                                  <Check className="w-5 h-5 text-primary" />
+                                )}
+                              </div>
+                            </motion.button>
+                          ))
+                        )}
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  }
+
+                  // Group by category when not searching
+                  return (['restoration', 'prosthetic', 'appliance', 'diagnostic'] as const).map((category) => {
+                    const categoryTypes = filteredTypes.filter(t => t.category === category)
+                    if (categoryTypes.length === 0) return null
+                    
+                    const categoryLabels = {
+                      restoration: 'Fixed Restorations',
+                      prosthetic: 'Prosthetics',
+                      appliance: 'Appliances',
+                      diagnostic: 'Diagnostic'
+                    }
+                    
+                    return (
+                      <div key={category}>
+                        <p className="text-xs text-white/40 uppercase tracking-wider mb-2 px-1">
+                          {categoryLabels[category]}
+                        </p>
+                        <div className="space-y-2 mb-4">
+                          {categoryTypes.map((type) => (
+                            <motion.button
+                              key={type.id}
+                              onClick={() => handleCaseTypeSelect(type.id)}
+                              className={cn(
+                                "w-full text-left p-4 rounded-2xl border transition-all",
+                                store.caseType === type.id
+                                  ? "bg-selected border-primary/50"
+                                  : "bg-card border-border/50 hover:border-white/20"
+                              )}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className={cn(
+                                    "font-medium",
+                                    store.caseType === type.id ? "text-primary" : "text-white"
+                                  )}>
+                                    {type.label}
+                                  </p>
+                                  <p className="text-sm text-white/50">{type.description}</p>
+                                </div>
+                                {store.caseType === type.id && (
+                                  <Check className="w-5 h-5 text-primary" />
+                                )}
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
               </div>
             )}
 
