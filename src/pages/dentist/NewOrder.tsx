@@ -59,11 +59,20 @@ const PRIORITIES = [
   { id: 'rush', label: 'Rush', days: '1-2 days', price: '+50%' },
 ]
 
+const LAB_SERVICE_FILTERS = ['All', 'Crown', 'Bridge', 'Denture', 'Implant']
+const LAB_SORT_OPTIONS = [
+  { id: 'rating', label: 'Top Rated' },
+  { id: 'distance', label: 'Nearest' },
+  { id: 'turnaround', label: 'Fastest' },
+]
+
 export function NewOrder() {
   const navigate = useNavigate()
   const store = useOrderStore()
   const [showSuccess, setShowSuccess] = useState(false)
   const [labSearch, setLabSearch] = useState('')
+  const [labServiceFilter, setLabServiceFilter] = useState('All')
+  const [labSortBy, setLabSortBy] = useState('rating')
 
   const canProceed = () => {
     switch (store.step) {
@@ -162,10 +171,25 @@ export function NewOrder() {
           >
             {/* Step 1: Select Lab */}
             {store.step === 1 && (() => {
-              const filteredLabs = MOCK_LABS.filter(lab => 
-                lab.name.toLowerCase().includes(labSearch.toLowerCase()) ||
-                lab.address.toLowerCase().includes(labSearch.toLowerCase())
-              )
+              // Filter by search and service
+              let filteredLabs = MOCK_LABS.filter(lab => {
+                const matchesSearch = lab.name.toLowerCase().includes(labSearch.toLowerCase()) ||
+                  lab.address.toLowerCase().includes(labSearch.toLowerCase())
+                const matchesService = labServiceFilter === 'All' ||
+                  lab.services.some(s => s.name.toLowerCase() === labServiceFilter.toLowerCase())
+                return matchesSearch && matchesService
+              })
+              
+              // Sort labs
+              filteredLabs = [...filteredLabs].sort((a, b) => {
+                switch (labSortBy) {
+                  case 'rating': return b.rating - a.rating
+                  case 'distance': return parseFloat(a.distance) - parseFloat(b.distance)
+                  case 'turnaround': return parseInt(a.turnaround.split('-')[0]) - parseInt(b.turnaround.split('-')[0])
+                  default: return 0
+                }
+              })
+              
               const favoriteLabs = filteredLabs.filter(lab => FAVORITE_LAB_IDS.includes(lab.id))
               const otherLabs = filteredLabs.filter(lab => !FAVORITE_LAB_IDS.includes(lab.id))
               
@@ -215,7 +239,7 @@ export function NewOrder() {
               )
               
               return (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {/* Search */}
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
@@ -235,8 +259,47 @@ export function NewOrder() {
                     )}
                   </div>
                   
+                  {/* Service Filter Pills */}
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {LAB_SERVICE_FILTERS.map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setLabServiceFilter(filter)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all shrink-0",
+                          labServiceFilter === filter
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card border border-border/50 text-white/70 hover:text-white"
+                        )}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Sort Options */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-white/40">Sort:</span>
+                    <div className="flex gap-1.5">
+                      {LAB_SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => setLabSortBy(option.id)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                            labSortBy === option.id
+                              ? "bg-white/10 text-white"
+                              : "text-white/50 hover:text-white"
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
                   {/* Favorites */}
-                  {favoriteLabs.length > 0 && !labSearch && (
+                  {favoriteLabs.length > 0 && !labSearch && labServiceFilter === 'All' && (
                     <div>
                       <p className="text-xs text-white/40 uppercase tracking-wider mb-3 flex items-center gap-1.5 px-1">
                         <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
@@ -252,11 +315,17 @@ export function NewOrder() {
                   
                   {/* All Labs */}
                   <div>
-                    {!labSearch && favoriteLabs.length > 0 && (
+                    {!labSearch && favoriteLabs.length > 0 && labServiceFilter === 'All' && (
                       <p className="text-xs text-white/40 uppercase tracking-wider mb-3 px-1">All Labs</p>
                     )}
+                    {(labSearch || labServiceFilter !== 'All') && filteredLabs.length > 0 && (
+                      <p className="text-xs text-white/40 mb-3 px-1">
+                        {filteredLabs.length} lab{filteredLabs.length !== 1 ? 's' : ''} found
+                        {labServiceFilter !== 'All' && ` for ${labServiceFilter}`}
+                      </p>
+                    )}
                     <div className="space-y-3">
-                      {(labSearch ? filteredLabs : otherLabs).map((lab) => (
+                      {(labSearch || labServiceFilter !== 'All' ? filteredLabs : otherLabs).map((lab) => (
                         <LabItem key={lab.id} lab={lab} />
                       ))}
                     </div>
@@ -265,6 +334,15 @@ export function NewOrder() {
                       <div className="text-center py-10">
                         <Search className="w-8 h-8 text-white/20 mx-auto mb-3" />
                         <p className="text-sm text-white/40">No labs found</p>
+                        <button
+                          onClick={() => {
+                            setLabSearch('')
+                            setLabServiceFilter('All')
+                          }}
+                          className="text-xs text-primary mt-2"
+                        >
+                          Clear filters
+                        </button>
                       </div>
                     )}
                   </div>
