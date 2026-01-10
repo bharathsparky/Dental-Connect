@@ -43,12 +43,27 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full h-full flex flex-col items-center justify-center"
+          className="w-full h-full flex flex-col items-center justify-center overflow-hidden relative"
           style={{
-            background: 'linear-gradient(180deg, #6193BB 0%, #82B4D5 100%)'
+            background: '#7EB1D4'
           }}
         >
-          {/* Lottie Animation */}
+          {/* Full-screen Lottie Animation as background */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {animationData && (
+              <Lottie
+                animationData={animationData}
+                loop={true}
+                style={{ 
+                  width: '180%',
+                  height: '180%',
+                  minWidth: '700px'
+                }}
+              />
+            )}
+          </div>
+          
+          {/* Content overlay */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -58,24 +73,15 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
               stiffness: 100,
               delay: 0.2 
             }}
-            className="relative w-[85%] max-w-[350px] aspect-[7/5] mb-4"
-          >
-            {animationData && (
-              <Lottie
-                animationData={animationData}
-                loop={true}
-                className="w-full h-full"
-                style={{ transform: 'scale(1.1)' }}
-              />
-            )}
-          </motion.div>
+            className="relative z-10 h-[45%]"
+          />
 
           {/* App Name */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="text-center"
+            className="text-center relative z-10"
           >
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#1a3a4a' }}>
               Dent<span style={{ color: '#0d5c6e' }}>Connect</span>
@@ -96,7 +102,7 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2, duration: 0.5 }}
-            className="absolute bottom-20"
+            className="absolute bottom-20 z-10"
           >
             <div className="flex gap-1.5">
               {[0, 1, 2].map((i) => (
