@@ -41,11 +41,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      {showSplash && (
-        <SplashScreen onComplete={() => setShowSplash(false)} />
-      )}
       <MobileFrame>
-        <AppContent />
+        {showSplash ? (
+          <SplashScreen onComplete={() => setShowSplash(false)} />
+        ) : (
+          <>
+            {/* Status bar area */}
+            <div className="h-[54px] bg-background flex items-end justify-center pb-1">
+              <div className="text-[11px] text-white/50 font-medium">9:41</div>
+            </div>
+            
+            {/* Scrollable content */}
+            <div className="h-[calc(100%-54px)] overflow-auto no-scrollbar">
+              <AppContent />
+            </div>
+          </>
+        )}
       </MobileFrame>
     </BrowserRouter>
   )

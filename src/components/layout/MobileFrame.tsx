@@ -20,7 +20,7 @@ export function MobileFrame({ children }: MobileFrameProps) {
   // Mobile: render app directly without any frame
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background relative overflow-hidden">
         {children}
       </div>
     )
@@ -43,16 +43,8 @@ export function MobileFrame({ children }: MobileFrameProps) {
             <div className="absolute top-[18px] left-1/2 -translate-x-1/2 w-[126px] h-[37px] bg-black rounded-full z-20" />
             
             {/* Screen */}
-            <div className="w-full h-full bg-background rounded-[43px] overflow-hidden">
-              {/* Status bar area */}
-              <div className="h-[54px] bg-background flex items-end justify-center pb-1">
-                <div className="text-[11px] text-white/50 font-medium">9:41</div>
-              </div>
-              
-              {/* Scrollable content */}
-              <div className="h-[calc(100%-54px)] overflow-auto no-scrollbar">
-                {children}
-              </div>
+            <div className="relative w-full h-full bg-background rounded-[43px] overflow-hidden">
+              {children}
             </div>
           </div>
         </div>

@@ -43,7 +43,7 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
+          className="w-full h-full flex flex-col items-center justify-center"
           style={{
             background: 'linear-gradient(180deg, #0a0a0f 0%, #0d1117 50%, #0a0a0f 100%)'
           }}
