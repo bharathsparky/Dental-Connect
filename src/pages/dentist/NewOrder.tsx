@@ -567,7 +567,8 @@ export function NewOrder() {
                       endTooth: null, 
                       abutments: [], 
                       pontics: [], 
-                      units: 0 
+                      units: 0,
+                      attachmentPositions: []
                     })}
                   />
                 )}
@@ -985,6 +986,12 @@ export function NewOrder() {
                             <p className="text-white/50 text-xs">Pontics</p>
                             <p className="font-medium text-white">{store.bridgeData.pontics.join(', ') || '-'}</p>
                           </div>
+                          {store.bridgeData.bridgeType === 'precision_attachment' && store.bridgeData.attachmentPositions && store.bridgeData.attachmentPositions.length > 0 && (
+                            <div>
+                              <p className="text-white/50 text-xs">Attachment Position</p>
+                              <p className="font-medium text-white">{store.bridgeData.attachmentPositions.join(', ')}</p>
+                            </div>
+                          )}
                         </>
                       )}
                       

@@ -32,6 +32,7 @@ export interface BridgeData {
   abutments: string[]  // Teeth that are present (will get crowns)
   pontics: string[]    // Positions that are missing (will be replaced)
   units: number
+  attachmentPositions: string[]  // For precision attachment: which abutment(s) get the attachment
 }
 
 // Denture-specific data
@@ -210,6 +211,7 @@ const initialBridgeData: BridgeData = {
   abutments: [],
   pontics: [],
   units: 0,
+  attachmentPositions: [],
 }
 
 const initialDentureData: DentureData = {

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react"
 import { motion } from "motion/react"
-import { Check, ArrowRight, RotateCcw } from "lucide-react"
+import { Check, ArrowRight, RotateCcw, Link2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Odontogram } from "react-odontogram"
 import type { BridgeData, BridgeType, PonticDesign } from "@/stores/orderStore"
@@ -385,6 +385,80 @@ export function BridgeSelector({
         </motion.div>
       )}
 
+      {/* Precision Attachment Position - Only show for precision attachment bridges */}
+      {bridgeData.bridgeType === 'precision_attachment' && bridgeData.units >= 3 && bridgeData.abutments.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Link2 className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-medium text-white">Attachment Position</h3>
+          </div>
+          <p className="text-xs text-white/50 mb-3">
+            Select which abutment(s) will have the precision attachment for the RPD
+          </p>
+          <div className="space-y-2">
+            {bridgeData.abutments.sort().map((tooth) => {
+              const isSelected = bridgeData.attachmentPositions?.includes(tooth)
+              return (
+                <button
+                  key={tooth}
+                  onClick={() => {
+                    const currentPositions = bridgeData.attachmentPositions || []
+                    const newPositions = isSelected
+                      ? currentPositions.filter(t => t !== tooth)
+                      : [...currentPositions, tooth]
+                    onBridgeDataChange({ attachmentPositions: newPositions })
+                  }}
+                  className={cn(
+                    "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                    isSelected
+                      ? "bg-selected border-primary/50"
+                      : "bg-card border-border/50 hover:border-white/20"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center font-medium text-sm",
+                      isSelected ? "bg-primary text-primary-foreground" : "bg-white/10 text-white"
+                    )}>
+                      {tooth}
+                    </div>
+                    <div>
+                      <p className={cn(
+                        "font-medium text-sm",
+                        isSelected ? "text-primary" : "text-white"
+                      )}>
+                        Tooth {tooth}
+                      </p>
+                      <p className="text-[10px] text-white/50">
+                        {tooth === bridgeData.abutments[0] ? 'Mesial abutment' : 
+                         tooth === bridgeData.abutments[bridgeData.abutments.length - 1] ? 'Distal abutment' : 
+                         'Intermediate abutment'}
+                      </p>
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <Check className="w-5 h-5 text-primary" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {bridgeData.attachmentPositions && bridgeData.attachmentPositions.length > 0 && (
+            <div className="mt-3 p-3 bg-primary/10 rounded-xl border border-primary/30">
+              <p className="text-xs text-primary font-medium">
+                Attachment on: {bridgeData.attachmentPositions.sort().join(', ')}
+              </p>
+              <p className="text-[10px] text-white/50 mt-1">
+                The lab will place the precision attachment connector on {bridgeData.attachmentPositions.length === 1 ? 'this tooth' : 'these teeth'}
+              </p>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Summary */}
       {bridgeData.units >= 3 && (
         <motion.div
@@ -416,11 +490,19 @@ export function BridgeSelector({
             </div>
           </div>
           
-          {bridgeData.ponticDesign && (
-            <div className="mt-2 pt-2 border-t border-white/10">
-              <p className="text-[9px] text-white/50">
-                Pontic Design: {PONTIC_DESIGNS.find(d => d.id === bridgeData.ponticDesign)?.label}
-              </p>
+          {(bridgeData.ponticDesign || (bridgeData.bridgeType === 'precision_attachment' && bridgeData.attachmentPositions && bridgeData.attachmentPositions.length > 0)) && (
+            <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+              {bridgeData.ponticDesign && (
+                <p className="text-[9px] text-white/50">
+                  Pontic Design: {PONTIC_DESIGNS.find(d => d.id === bridgeData.ponticDesign)?.label}
+                </p>
+              )}
+              {bridgeData.bridgeType === 'precision_attachment' && bridgeData.attachmentPositions && bridgeData.attachmentPositions.length > 0 && (
+                <p className="text-[9px] text-white/50 flex items-center gap-1">
+                  <Link2 className="w-3 h-3" />
+                  Attachment: {bridgeData.attachmentPositions.sort().join(', ')}
+                </p>
+              )}
             </div>
           )}
         </motion.div>
