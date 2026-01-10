@@ -20,7 +20,7 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
       .catch(console.error)
 
     // Play background music
-    audioRef.current = new Audio('/bg.wav')
+    audioRef.current = new Audio('/shin.wav')
     audioRef.current.volume = 0.5
     audioRef.current.play().catch(() => {
       // Autoplay might be blocked, that's okay
