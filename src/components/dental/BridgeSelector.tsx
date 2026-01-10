@@ -86,6 +86,12 @@ export function BridgeSelector({
     const svg = wrapper.querySelector('svg')
     if (!svg) return
 
+    // Debug: log all group IDs in the SVG
+    const allGroupsDebug = svg.querySelectorAll('g[id]')
+    if (allGroupsDebug.length > 0) {
+      console.log('SVG group IDs found:', Array.from(allGroupsDebug).slice(0, 10).map(g => g.id))
+    }
+
     // Reset ALL teeth to default color first
     const allGroups = svg.querySelectorAll('g[id^="teeth-"]')
     allGroups.forEach(group => {
