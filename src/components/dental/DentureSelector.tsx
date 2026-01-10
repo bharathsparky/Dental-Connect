@@ -13,6 +13,7 @@ interface DentureSelectorProps {
 const DENTURE_TYPES = [
   { id: 'full', label: 'Full Denture', description: 'Complete denture for edentulous arch' },
   { id: 'partial', label: 'Partial Denture', description: 'Removable partial for some missing teeth' },
+  { id: 'obturator', label: 'Obturator', description: 'Prosthesis to close palatal defect' },
 ]
 
 const ARCH_OPTIONS = [
@@ -111,6 +112,63 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
         </motion.div>
       )}
 
+      {/* Obturator: Upper Arch Only (palatal defect) */}
+      {dentureData.dentureType === 'obturator' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+            <p className="text-sm text-amber-400 font-medium mb-1">Obturator Prosthesis</p>
+            <p className="text-xs text-white/60">
+              Used to close palatal defects (post-maxillectomy, cleft palate). 
+              Please provide defect details in the notes section.
+            </p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-white mb-3">Defect Location</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => onDentureDataChange({ arch: 'upper' })}
+                className={cn(
+                  "p-4 rounded-xl border transition-all text-center",
+                  dentureData.arch === 'upper'
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <p className={cn(
+                  "font-medium text-sm mb-1",
+                  dentureData.arch === 'upper' ? "text-primary" : "text-white"
+                )}>
+                  Maxillary
+                </p>
+                <p className="text-[10px] text-white/50">Hard/soft palate</p>
+              </button>
+              <button
+                onClick={() => onDentureDataChange({ arch: 'lower' })}
+                className={cn(
+                  "p-4 rounded-xl border transition-all text-center",
+                  dentureData.arch === 'lower'
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <p className={cn(
+                  "font-medium text-sm mb-1",
+                  dentureData.arch === 'lower' ? "text-primary" : "text-white"
+                )}>
+                  Mandibular
+                </p>
+                <p className="text-[10px] text-white/50">Floor of mouth</p>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Partial Denture: Missing Teeth Selection with Odontogram */}
       {dentureData.dentureType === 'partial' && (
         <motion.div
@@ -158,7 +216,8 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
 
       {/* Summary */}
       {((dentureData.dentureType === 'full' && dentureData.arch) ||
-        (dentureData.dentureType === 'partial' && dentureData.missingTeeth && dentureData.missingTeeth.length > 0)) && (
+        (dentureData.dentureType === 'partial' && dentureData.missingTeeth && dentureData.missingTeeth.length > 0) ||
+        (dentureData.dentureType === 'obturator' && dentureData.arch)) && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -167,12 +226,19 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
           <p className="text-sm font-medium text-primary mb-1">
             {dentureData.dentureType === 'full' 
               ? `Full ${dentureData.arch === 'both' ? 'Upper & Lower' : (dentureData.arch ? dentureData.arch.charAt(0).toUpperCase() + dentureData.arch.slice(1) : '')} Denture`
+              : dentureData.dentureType === 'obturator'
+              ? `${dentureData.arch === 'upper' ? 'Maxillary' : 'Mandibular'} Obturator`
               : `Partial Denture`
             }
           </p>
           {dentureData.dentureType === 'partial' && dentureData.missingTeeth && (
             <p className="text-xs text-white/60">
               {dentureData.missingTeeth.length} missing teeth: {dentureData.missingTeeth.sort().join(', ')}
+            </p>
+          )}
+          {dentureData.dentureType === 'obturator' && (
+            <p className="text-xs text-white/60">
+              Provide defect details and measurements in notes
             </p>
           )}
         </motion.div>

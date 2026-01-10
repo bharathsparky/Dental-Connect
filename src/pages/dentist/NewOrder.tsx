@@ -89,9 +89,10 @@ export function NewOrder() {
           case 'crown': return store.selectedTeeth.length > 0
           case 'bridge': return store.bridgeData.units >= 3 // Minimum 3-unit bridge
           case 'denture': 
-            return store.dentureData.dentureType === 'full' 
-              ? !!store.dentureData.arch
-              : (store.dentureData.missingTeeth?.length || 0) > 0
+            if (store.dentureData.dentureType === 'full' || store.dentureData.dentureType === 'obturator') {
+              return !!store.dentureData.arch
+            }
+            return (store.dentureData.missingTeeth?.length || 0) > 0
           case 'implant': return store.implantData.positions.length > 0
           default: return false
         }
@@ -126,6 +127,9 @@ export function NewOrder() {
       case 'denture':
         if (store.dentureData.dentureType === 'full') {
           return `Full ${store.dentureData.arch} arch`
+        }
+        if (store.dentureData.dentureType === 'obturator') {
+          return `${store.dentureData.arch === 'upper' ? 'Maxillary' : 'Mandibular'} Obturator`
         }
         return `Partial (${store.dentureData.missingTeeth?.length || 0} teeth)`
       case 'implant':

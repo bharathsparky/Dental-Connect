@@ -3,7 +3,7 @@ import { create } from 'zustand'
 export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | null
 export type Priority = 'normal' | 'urgent' | 'rush'
 export type ImpressionMaterial = 'alginate' | 'pvs' | 'polyether' | 'digital_scan' | null
-export type DentureType = 'full' | 'partial' | null
+export type DentureType = 'full' | 'partial' | 'obturator' | null
 export type DentureArch = 'upper' | 'lower' | 'both' | null
 export type BridgeType = 'conventional' | 'cantilever' | 'maryland' | null
 
