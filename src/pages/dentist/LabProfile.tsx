@@ -14,12 +14,23 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Header } from "@/components/layout/Header"
 import { getLabById } from "@/data/mockLabs"
+import { useOrderStore } from "@/stores/orderStore"
 import { cn } from "@/lib/utils"
 
 export function LabProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const store = useOrderStore()
   const lab = id ? getLabById(id) : null
+
+  const handleOrderClick = () => {
+    if (lab && id) {
+      // Pre-select the lab and start at step 2 (Case Type)
+      store.setLabId(id)
+      store.setStep(2)
+      navigate('/new-order')
+    }
+  }
 
   if (!lab) {
     return (
@@ -242,7 +253,7 @@ export function LabProfile() {
       <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-background via-background to-background/80 z-40">
         <Button 
           className="w-full"
-          onClick={() => navigate('/new-order')}
+          onClick={handleOrderClick}
         >
           Order from {lab.name}
         </Button>

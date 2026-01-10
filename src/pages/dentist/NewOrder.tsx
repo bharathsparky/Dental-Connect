@@ -141,6 +141,13 @@ export function NewOrder() {
     setModalOpen(showLabFilters)
   }, [showLabFilters, setModalOpen])
 
+  // If lab is pre-selected (e.g., from LabProfile), start at step 2
+  useEffect(() => {
+    if (store.labId && store.step === 1) {
+      store.setStep(2)
+    }
+  }, [store.labId, store.step])
+
   // Auto-advance handlers for single-selection screens
   const handleLabSelect = (labId: string) => {
     store.setLabId(labId)
