@@ -49,15 +49,15 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
           }}
         >
           {/* Full-screen Lottie Animation as background */}
-          <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-10%' }}>
+          <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-5%' }}>
             {animationData && (
               <Lottie
                 animationData={animationData}
                 loop={true}
                 style={{ 
-                  width: '250%',
-                  height: '250%',
-                  minWidth: '900px'
+                  width: '160%',
+                  height: '160%',
+                  minWidth: '600px'
                 }}
               />
             )}
