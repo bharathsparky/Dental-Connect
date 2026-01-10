@@ -28,6 +28,9 @@ import { NightGuardSelector } from "@/components/dental/NightGuardSelector"
 import { RetainerSelector } from "@/components/dental/RetainerSelector"
 import { WaxupSelector } from "@/components/dental/WaxupSelector"
 import { FullMouthRehabSelector } from "@/components/dental/FullMouthRehabSelector"
+import { SurgicalGuideSelector } from "@/components/dental/SurgicalGuideSelector"
+import { AllOnXSelector } from "@/components/dental/AllOnXSelector"
+import { BleachingTraySelector, SportsGuardSelector, ClearAlignerSelector, ProvisionalSelector } from "@/components/dental/SimpleSelectors"
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
 import { useOrderStore } from "@/stores/orderStore"
@@ -74,6 +77,14 @@ const CASE_TYPES: { id: CaseType, label: string, description: string, category: 
   // Diagnostic & Complex
   { id: 'waxup', label: 'Wax-Up / Study', description: 'Diagnostic planning & visualization', category: 'diagnostic' },
   { id: 'full_mouth_rehab', label: 'Full Mouth Rehab', description: 'Comprehensive restoration', category: 'restoration' },
+  // Digital & Implant
+  { id: 'surgical_guide', label: 'Surgical Guide', description: 'Implant placement guide', category: 'restoration' },
+  { id: 'all_on_x', label: 'All-on-X', description: 'Full arch implant prosthesis', category: 'prosthetic' },
+  { id: 'provisional', label: 'Provisional', description: 'Temporary crown/bridge', category: 'restoration' },
+  // Appliances
+  { id: 'bleaching_tray', label: 'Bleaching Tray', description: 'Whitening trays', category: 'appliance' },
+  { id: 'sports_guard', label: 'Sports Guard', description: 'Athletic mouthguard', category: 'appliance' },
+  { id: 'clear_aligner', label: 'Clear Aligner', description: 'Orthodontic aligners', category: 'appliance' },
 ]
 
 const PRIORITIES = [
@@ -90,7 +101,7 @@ const LAB_SORT_OPTIONS = [
 ]
 
 // Case types that don't need shade selection
-const NO_SHADE_CASE_TYPES: CaseType[] = ['night_guard', 'retainer', 'waxup']
+const NO_SHADE_CASE_TYPES: CaseType[] = ['night_guard', 'retainer', 'waxup', 'surgical_guide', 'bleaching_tray', 'sports_guard', 'clear_aligner']
 
 export function NewOrder() {
   const navigate = useNavigate()
@@ -160,6 +171,32 @@ export function NewOrder() {
                    !!store.fmrData.treatmentApproach &&
                    !!store.fmrData.guideplane &&
                    ((store.fmrData.upperTeeth?.length || 0) > 0 || (store.fmrData.lowerTeeth?.length || 0) > 0)
+          case 'surgical_guide':
+            return store.surgicalGuideData.hasCBCT && 
+                   store.surgicalGuideData.hasDigitalScan &&
+                   !!store.surgicalGuideData.guideType &&
+                   !!store.surgicalGuideData.surgeryType &&
+                   (store.surgicalGuideData.implantPositions?.length || 0) > 0 &&
+                   !!store.surgicalGuideData.implantSystem &&
+                   !!store.surgicalGuideData.sleeveSize
+          case 'all_on_x':
+            return !!store.allOnXData.arch &&
+                   !!store.allOnXData.type &&
+                   !!store.allOnXData.stage &&
+                   (store.allOnXData.implantPositions?.length || 0) > 0 &&
+                   !!store.allOnXData.material &&
+                   !!store.allOnXData.implantSystem
+          case 'bleaching_tray':
+            return !!store.bleachingTrayData.arch && !!store.bleachingTrayData.thickness
+          case 'sports_guard':
+            return !!store.sportsGuardData.sportLevel && !!store.sportsGuardData.thickness
+          case 'clear_aligner':
+            return !!store.clearAlignerData.stage && store.clearAlignerData.hasDigitalScan
+          case 'provisional':
+            return !!store.provisionalData.type &&
+                   !!store.provisionalData.material &&
+                   !!store.provisionalData.duration &&
+                   (store.provisionalData.selectedTeeth?.length || 0) > 0
           default: return false
         }
       case 4: return store.hasImpression && !!store.impressionMaterial
@@ -654,6 +691,54 @@ export function NewOrder() {
                   <FullMouthRehabSelector
                     fmrData={store.fmrData}
                     onFMRDataChange={store.setFMRData}
+                  />
+                )}
+
+                {/* Surgical Guide */}
+                {store.caseType === 'surgical_guide' && (
+                  <SurgicalGuideSelector
+                    surgicalGuideData={store.surgicalGuideData}
+                    onSurgicalGuideDataChange={store.setSurgicalGuideData}
+                  />
+                )}
+
+                {/* All-on-X */}
+                {store.caseType === 'all_on_x' && (
+                  <AllOnXSelector
+                    allOnXData={store.allOnXData}
+                    onAllOnXDataChange={store.setAllOnXData}
+                  />
+                )}
+
+                {/* Bleaching Tray */}
+                {store.caseType === 'bleaching_tray' && (
+                  <BleachingTraySelector
+                    bleachingTrayData={store.bleachingTrayData}
+                    onBleachingTrayDataChange={store.setBleachingTrayData}
+                  />
+                )}
+
+                {/* Sports Guard */}
+                {store.caseType === 'sports_guard' && (
+                  <SportsGuardSelector
+                    sportsGuardData={store.sportsGuardData}
+                    onSportsGuardDataChange={store.setSportsGuardData}
+                  />
+                )}
+
+                {/* Clear Aligner */}
+                {store.caseType === 'clear_aligner' && (
+                  <ClearAlignerSelector
+                    clearAlignerData={store.clearAlignerData}
+                    onClearAlignerDataChange={store.setClearAlignerData}
+                  />
+                )}
+
+                {/* Provisional */}
+                {store.caseType === 'provisional' && (
+                  <ProvisionalSelector
+                    provisionalData={store.provisionalData}
+                    onProvisionalDataChange={store.setProvisionalData}
                   />
                 )}
               </div>

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup' | 'full_mouth_rehab' | null
+export type CaseType = 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup' | 'full_mouth_rehab' | 'surgical_guide' | 'all_on_x' | 'bleaching_tray' | 'sports_guard' | 'clear_aligner' | 'provisional' | null
 export type Priority = 'normal' | 'urgent' | 'rush'
 export type ImpressionMaterial = 'alginate' | 'pvs' | 'polyether' | 'digital_scan' | null
 export type DentureType = 'full' | 'partial' | 'immediate' | 'overdenture' | 'obturator' | null
@@ -162,6 +162,87 @@ export interface FMRData {
   deprogrammer: boolean  // Anterior deprogrammer used?
 }
 
+// Surgical Guide data
+export type GuideType = 'tooth_supported' | 'mucosa_supported' | 'bone_supported' | null
+export type SurgeryType = 'pilot_drill' | 'fully_guided' | 'stackable' | null
+
+export interface SurgicalGuideData {
+  guideType: GuideType
+  surgeryType: SurgeryType
+  implantPositions: string[]
+  implantSystem: string | null
+  sleeveSize: string | null  // e.g., "5.0mm"
+  hasDigitalScan: boolean
+  hasCBCT: boolean
+  needsRestrictionSleeve: boolean
+}
+
+// All-on-X (Full Arch Implant) data
+export type AllOnXType = 'all_on_4' | 'all_on_6' | 'zygomatic' | null
+export type HybridMaterial = 'pmma' | 'zirconia' | 'titanium_acrylic' | 'peek' | null
+
+export interface AllOnXData {
+  arch: DentureArch
+  type: AllOnXType
+  stage: 'conversion' | 'immediate_load' | 'final' | null
+  implantSystem: string | null
+  implantPositions: string[]
+  tiBarIncluded: boolean
+  material: HybridMaterial
+  hasMultiUnitAbutments: boolean
+  screwAccessPosition: 'palatal' | 'occlusal' | null
+}
+
+// Bleaching Tray data
+export interface BleachingTrayData {
+  arch: DentureArch
+  reservoirIncluded: boolean  // Space for bleaching gel
+  scalloped: boolean  // Follows gingival margin
+  thickness: 'thin' | 'medium' | 'thick' | null
+}
+
+// Sports Guard data
+export type SportsGuardType = 'stock' | 'boil_bite' | 'custom' | 'professional' | null
+export type SportLevel = 'low_risk' | 'medium_risk' | 'high_risk' | null
+
+export interface SportsGuardData {
+  guardType: SportsGuardType
+  arch: DentureArch
+  thickness: 'standard' | 'heavy' | 'extra_heavy' | null
+  sportLevel: SportLevel
+  sportType: string | null  // e.g., "boxing", "football"
+  color: string | null
+  hasLabialBar: boolean  // For added protection
+}
+
+// Clear Aligner data
+export type AlignerStage = 'records' | 'refinement' | 'retainer' | null
+
+export interface ClearAlignerData {
+  stage: AlignerStage
+  arch: DentureArch
+  hasCBCT: boolean
+  hasDigitalScan: boolean
+  hasPhotos: boolean  // Extraoral/Intraoral photos
+  alignerNumber: string | null  // Current aligner number
+  totalAligners: string | null
+  ipr: boolean  // Interproximal reduction needed
+  attachments: boolean  // Composite attachments
+}
+
+// Provisional (Temporary Crown/Bridge) data
+export type ProvisionalMaterial = 'pmma' | 'composite' | 'bis_acrylic' | null
+export type ProvisionalDuration = 'short_term' | 'long_term' | null
+
+export interface ProvisionalData {
+  type: 'crown' | 'bridge' | 'full_arch' | null
+  material: ProvisionalMaterial
+  duration: ProvisionalDuration
+  selectedTeeth: string[]
+  needsCustomStaining: boolean
+  hasDigitalDesign: boolean  // From wax-up or digital design
+}
+
 export interface OrderFormState {
   step: number
   labId: string | null
@@ -202,6 +283,24 @@ export interface OrderFormState {
   
   // Full Mouth Rehab-specific
   fmrData: FMRData
+  
+  // Surgical Guide-specific
+  surgicalGuideData: SurgicalGuideData
+  
+  // All-on-X-specific
+  allOnXData: AllOnXData
+  
+  // Bleaching Tray-specific
+  bleachingTrayData: BleachingTrayData
+  
+  // Sports Guard-specific
+  sportsGuardData: SportsGuardData
+  
+  // Clear Aligner-specific
+  clearAlignerData: ClearAlignerData
+  
+  // Provisional-specific
+  provisionalData: ProvisionalData
   
   // Impression & Material
   hasImpression: boolean
@@ -260,6 +359,24 @@ export interface OrderFormState {
   
   // FMR actions
   setFMRData: (data: Partial<FMRData>) => void
+  
+  // Surgical Guide actions
+  setSurgicalGuideData: (data: Partial<SurgicalGuideData>) => void
+  
+  // All-on-X actions
+  setAllOnXData: (data: Partial<AllOnXData>) => void
+  
+  // Bleaching Tray actions
+  setBleachingTrayData: (data: Partial<BleachingTrayData>) => void
+  
+  // Sports Guard actions
+  setSportsGuardData: (data: Partial<SportsGuardData>) => void
+  
+  // Clear Aligner actions
+  setClearAlignerData: (data: Partial<ClearAlignerData>) => void
+  
+  // Provisional actions
+  setProvisionalData: (data: Partial<ProvisionalData>) => void
   
   setHasImpression: (hasImpression: boolean) => void
   setImpressionMaterial: (material: ImpressionMaterial) => void
@@ -387,6 +504,67 @@ const initialFMRData: FMRData = {
   deprogrammer: false,
 }
 
+const initialSurgicalGuideData: SurgicalGuideData = {
+  guideType: null,
+  surgeryType: null,
+  implantPositions: [],
+  implantSystem: null,
+  sleeveSize: null,
+  hasDigitalScan: false,
+  hasCBCT: false,
+  needsRestrictionSleeve: false,
+}
+
+const initialAllOnXData: AllOnXData = {
+  arch: null,
+  type: null,
+  stage: null,
+  implantSystem: null,
+  implantPositions: [],
+  tiBarIncluded: false,
+  material: null,
+  hasMultiUnitAbutments: false,
+  screwAccessPosition: null,
+}
+
+const initialBleachingTrayData: BleachingTrayData = {
+  arch: null,
+  reservoirIncluded: true,
+  scalloped: true,
+  thickness: null,
+}
+
+const initialSportsGuardData: SportsGuardData = {
+  guardType: null,
+  arch: null,
+  thickness: null,
+  sportLevel: null,
+  sportType: null,
+  color: null,
+  hasLabialBar: false,
+}
+
+const initialClearAlignerData: ClearAlignerData = {
+  stage: null,
+  arch: null,
+  hasCBCT: false,
+  hasDigitalScan: false,
+  hasPhotos: false,
+  alignerNumber: null,
+  totalAligners: null,
+  ipr: false,
+  attachments: false,
+}
+
+const initialProvisionalData: ProvisionalData = {
+  type: null,
+  material: null,
+  duration: null,
+  selectedTeeth: [],
+  needsCustomStaining: false,
+  hasDigitalDesign: false,
+}
+
 const initialState = {
   step: 1,
   labId: null,
@@ -405,6 +583,12 @@ const initialState = {
   retainerData: { ...initialRetainerData },
   waxupData: { ...initialWaxupData },
   fmrData: { ...initialFMRData },
+  surgicalGuideData: { ...initialSurgicalGuideData },
+  allOnXData: { ...initialAllOnXData },
+  bleachingTrayData: { ...initialBleachingTrayData },
+  sportsGuardData: { ...initialSportsGuardData },
+  clearAlignerData: { ...initialClearAlignerData },
+  provisionalData: { ...initialProvisionalData },
   hasImpression: false,
   impressionMaterial: null as ImpressionMaterial,
   hasBiteRegistration: false,
@@ -467,6 +651,12 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     retainerData: { ...initialRetainerData },
     waxupData: { ...initialWaxupData },
     fmrData: { ...initialFMRData },
+    surgicalGuideData: { ...initialSurgicalGuideData },
+    allOnXData: { ...initialAllOnXData },
+    bleachingTrayData: { ...initialBleachingTrayData },
+    sportsGuardData: { ...initialSportsGuardData },
+    clearAlignerData: { ...initialClearAlignerData },
+    provisionalData: { ...initialProvisionalData },
   }),
   setPatientInfo: (patientName, patientAge, patientGender) => set({ 
     patientName, 
@@ -587,6 +777,36 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     fmrData: { ...state.fmrData, ...data }
   })),
   
+  // Surgical Guide actions
+  setSurgicalGuideData: (data) => set((state) => ({
+    surgicalGuideData: { ...state.surgicalGuideData, ...data }
+  })),
+  
+  // All-on-X actions
+  setAllOnXData: (data) => set((state) => ({
+    allOnXData: { ...state.allOnXData, ...data }
+  })),
+  
+  // Bleaching Tray actions
+  setBleachingTrayData: (data) => set((state) => ({
+    bleachingTrayData: { ...state.bleachingTrayData, ...data }
+  })),
+  
+  // Sports Guard actions
+  setSportsGuardData: (data) => set((state) => ({
+    sportsGuardData: { ...state.sportsGuardData, ...data }
+  })),
+  
+  // Clear Aligner actions
+  setClearAlignerData: (data) => set((state) => ({
+    clearAlignerData: { ...state.clearAlignerData, ...data }
+  })),
+  
+  // Provisional actions
+  setProvisionalData: (data) => set((state) => ({
+    provisionalData: { ...state.provisionalData, ...data }
+  })),
+  
   setHasImpression: (hasImpression) => set({ hasImpression }),
   setImpressionMaterial: (impressionMaterial) => set({ impressionMaterial }),
   setHasBiteRegistration: (hasBiteRegistration) => set({ hasBiteRegistration }),
@@ -613,6 +833,12 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
     retainerData: { ...initialRetainerData },
     waxupData: { ...initialWaxupData },
     fmrData: { ...initialFMRData },
+    surgicalGuideData: { ...initialSurgicalGuideData },
+    allOnXData: { ...initialAllOnXData },
+    bleachingTrayData: { ...initialBleachingTrayData },
+    sportsGuardData: { ...initialSportsGuardData },
+    clearAlignerData: { ...initialClearAlignerData },
+    provisionalData: { ...initialProvisionalData },
   }),
   
   // Helper to get display summary
@@ -666,6 +892,22 @@ export const useOrderStore = create<OrderFormState>((set, get) => ({
         return totalTeeth > 0
           ? `FMR: ${totalTeeth} teeth, ${state.fmrData.stage || 'planning'}`
           : 'Full Mouth Rehabilitation'
+      case 'surgical_guide':
+        return state.surgicalGuideData.implantPositions.length > 0
+          ? `Guide: ${state.surgicalGuideData.implantPositions.join(', ')}`
+          : 'Surgical Guide'
+      case 'all_on_x':
+        return `All-on-${state.allOnXData.type?.replace('all_on_', '') || 'X'} - ${state.allOnXData.arch || ''}`
+      case 'bleaching_tray':
+        return `Bleaching Tray - ${state.bleachingTrayData.arch || ''}`
+      case 'sports_guard':
+        return `Sports Guard - ${state.sportsGuardData.sportType || state.sportsGuardData.sportLevel || ''}`
+      case 'clear_aligner':
+        return `Aligners - ${state.clearAlignerData.stage || ''}`
+      case 'provisional':
+        return state.provisionalData.selectedTeeth.length > 0
+          ? `Provisional: ${state.provisionalData.selectedTeeth.join(', ')}`
+          : 'Provisional Restoration'
       default:
         return ''
     }

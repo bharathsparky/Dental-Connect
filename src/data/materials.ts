@@ -6,7 +6,7 @@ export interface Material {
   turnaround: string
   icon: string
   features: string[]
-  category: 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup'
+  category: 'crown' | 'bridge' | 'denture' | 'implant' | 'veneer' | 'inlay_onlay' | 'night_guard' | 'retainer' | 'waxup' | 'surgical_guide' | 'all_on_x' | 'bleaching_tray' | 'sports_guard' | 'clear_aligner' | 'provisional' | 'full_mouth_rehab'
 }
 
 export const MATERIALS: Record<string, Material[]> = {
@@ -476,6 +476,240 @@ export const MATERIALS: Record<string, Material[]> = {
       icon: '📊',
       features: ['Articulated', 'Diagnostic', 'Record Keeping'],
       category: 'waxup'
+    },
+  ],
+  surgical_guide: [
+    {
+      id: 'resin-guide',
+      name: 'Resin Surgical Guide',
+      description: '3D printed resin surgical guide',
+      priceRange: '₹8,000 - ₹15,000',
+      turnaround: '5-7 days',
+      icon: '🎯',
+      features: ['3D Printed', 'Digital Planning', 'Accurate'],
+      category: 'surgical_guide'
+    },
+    {
+      id: 'metal-sleeve-guide',
+      name: 'Metal Sleeve Guide',
+      description: 'Resin guide with titanium sleeves',
+      priceRange: '₹12,000 - ₹20,000',
+      turnaround: '7-10 days',
+      icon: '⚙️',
+      features: ['Titanium Sleeves', 'Durable', 'Multiple Surgeries'],
+      category: 'surgical_guide'
+    },
+    {
+      id: 'stackable-guide',
+      name: 'Stackable Guide System',
+      description: 'Progressive drilling guide system',
+      priceRange: '₹15,000 - ₹25,000',
+      turnaround: '7-10 days',
+      icon: '📚',
+      features: ['Progressive Drilling', 'Full Control', 'Premium'],
+      category: 'surgical_guide'
+    },
+  ],
+  all_on_x: [
+    {
+      id: 'pmma-hybrid',
+      name: 'PMMA Hybrid Prosthesis',
+      description: 'Acrylic provisional full-arch restoration',
+      priceRange: '₹30,000 - ₹50,000',
+      turnaround: '7-10 days',
+      icon: '🦷',
+      features: ['Economical', 'Immediate Load', 'Adjustable'],
+      category: 'all_on_x'
+    },
+    {
+      id: 'zirconia-hybrid',
+      name: 'Zirconia Hybrid',
+      description: 'Monolithic zirconia full-arch prosthesis',
+      priceRange: '₹1,50,000 - ₹2,50,000',
+      turnaround: '14-21 days',
+      icon: '💎',
+      features: ['Premium', 'Stain Resistant', 'Long Lasting'],
+      category: 'all_on_x'
+    },
+    {
+      id: 'ti-bar-acrylic',
+      name: 'Ti-Bar with Acrylic',
+      description: 'Titanium bar framework with acrylic teeth',
+      priceRange: '₹80,000 - ₹1,20,000',
+      turnaround: '14-21 days',
+      icon: '⚙️',
+      features: ['Strong Framework', 'Repairable Teeth', 'Classic'],
+      category: 'all_on_x'
+    },
+    {
+      id: 'peek-hybrid',
+      name: 'PEEK Hybrid',
+      description: 'PEEK framework full-arch prosthesis',
+      priceRange: '₹1,00,000 - ₹1,50,000',
+      turnaround: '14-21 days',
+      icon: '🔧',
+      features: ['Lightweight', 'Shock Absorbing', 'Metal-Free'],
+      category: 'all_on_x'
+    },
+  ],
+  bleaching_tray: [
+    {
+      id: 'standard-bleaching',
+      name: 'Standard Bleaching Tray',
+      description: 'Custom vacuum-formed whitening tray',
+      priceRange: '₹2,000 - ₹4,000',
+      turnaround: '3-5 days',
+      icon: '✨',
+      features: ['Custom Fit', 'With Reservoirs', 'Durable'],
+      category: 'bleaching_tray'
+    },
+    {
+      id: 'scalloped-bleaching',
+      name: 'Scalloped Bleaching Tray',
+      description: 'Gingival-contoured whitening tray',
+      priceRange: '₹3,000 - ₹5,000',
+      turnaround: '3-5 days',
+      icon: '🌟',
+      features: ['Gingival Margin', 'Less Irritation', 'Precise'],
+      category: 'bleaching_tray'
+    },
+  ],
+  sports_guard: [
+    {
+      id: 'single-layer-guard',
+      name: 'Single Layer Guard',
+      description: 'Standard EVA sports mouthguard',
+      priceRange: '₹2,000 - ₹4,000',
+      turnaround: '3-5 days',
+      icon: '🛡️',
+      features: ['Low Risk Sports', 'Comfortable', 'Economical'],
+      category: 'sports_guard'
+    },
+    {
+      id: 'multi-layer-guard',
+      name: 'Multi-Layer Guard',
+      description: 'Pressure-laminated protection',
+      priceRange: '₹4,000 - ₹8,000',
+      turnaround: '5-7 days',
+      icon: '🏆',
+      features: ['High Impact', 'Contact Sports', 'Durable'],
+      category: 'sports_guard'
+    },
+    {
+      id: 'pro-guard',
+      name: 'Professional Guard',
+      description: 'Maximum protection for combat sports',
+      priceRange: '₹8,000 - ₹15,000',
+      turnaround: '7-10 days',
+      icon: '🥊',
+      features: ['Combat Sports', 'Maximum Protection', 'Custom Design'],
+      category: 'sports_guard'
+    },
+  ],
+  clear_aligner: [
+    {
+      id: 'aligner-set',
+      name: 'Aligner Set',
+      description: 'Set of clear aligners based on treatment plan',
+      priceRange: '₹15,000 - ₹30,000',
+      turnaround: '10-14 days',
+      icon: '💎',
+      features: ['Clear', 'Removable', 'Custom'],
+      category: 'clear_aligner'
+    },
+    {
+      id: 'refinement-aligners',
+      name: 'Refinement Aligners',
+      description: 'Additional aligners for fine-tuning',
+      priceRange: '₹8,000 - ₹15,000',
+      turnaround: '7-10 days',
+      icon: '🔄',
+      features: ['Mid-course', 'Correction', 'Fine Tuning'],
+      category: 'clear_aligner'
+    },
+    {
+      id: 'retainer-aligners',
+      name: 'Retention Aligners',
+      description: 'Post-treatment retention aligners',
+      priceRange: '₹5,000 - ₹10,000',
+      turnaround: '5-7 days',
+      icon: '✅',
+      features: ['Post Treatment', 'Maintenance', 'Long Term'],
+      category: 'clear_aligner'
+    },
+  ],
+  provisional: [
+    {
+      id: 'pmma-provisional',
+      name: 'PMMA Provisional',
+      description: 'CAD/CAM milled PMMA temporary',
+      priceRange: '₹3,000 - ₹6,000',
+      turnaround: '3-5 days',
+      icon: '🔧',
+      features: ['Milled', 'Durable', 'Long Term'],
+      category: 'provisional'
+    },
+    {
+      id: 'composite-provisional',
+      name: 'Composite Provisional',
+      description: 'Lab-processed composite temporary',
+      priceRange: '₹2,000 - ₹4,000',
+      turnaround: '3-5 days',
+      icon: '🦷',
+      features: ['Aesthetic', 'Economical', 'Quick'],
+      category: 'provisional'
+    },
+    {
+      id: 'full-arch-provisional',
+      name: 'Full Arch Provisional',
+      description: 'Complete arch temporary prosthesis',
+      priceRange: '₹15,000 - ₹30,000',
+      turnaround: '5-7 days',
+      icon: '✨',
+      features: ['Full Arch', 'Long Term', 'Aesthetic'],
+      category: 'provisional'
+    },
+  ],
+  full_mouth_rehab: [
+    {
+      id: 'diagnostic-phase',
+      name: 'Diagnostic Phase',
+      description: 'Wax-up, mock-up, and treatment planning',
+      priceRange: '₹10,000 - ₹20,000',
+      turnaround: '7-10 days',
+      icon: '📋',
+      features: ['Planning', 'Visualization', 'Patient Approval'],
+      category: 'full_mouth_rehab'
+    },
+    {
+      id: 'provisional-phase',
+      name: 'Provisional Phase',
+      description: 'Full mouth PMMA provisionals',
+      priceRange: '₹30,000 - ₹60,000',
+      turnaround: '7-14 days',
+      icon: '🔧',
+      features: ['Full Mouth', 'Test Drive', 'Adjustable'],
+      category: 'full_mouth_rehab'
+    },
+    {
+      id: 'final-zirconia',
+      name: 'Final - Zirconia',
+      description: 'Full mouth zirconia restorations',
+      priceRange: '₹2,00,000 - ₹4,00,000',
+      turnaround: '21-30 days',
+      icon: '💎',
+      features: ['Premium', 'Durable', 'Aesthetic'],
+      category: 'full_mouth_rehab'
+    },
+    {
+      id: 'final-emax',
+      name: 'Final - E.max',
+      description: 'Full mouth E.max restorations',
+      priceRange: '₹3,00,000 - ₹5,00,000',
+      turnaround: '21-30 days',
+      icon: '✨',
+      features: ['Best Aesthetics', 'Translucent', 'Premium'],
+      category: 'full_mouth_rehab'
     },
   ],
 }
