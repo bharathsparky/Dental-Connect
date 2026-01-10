@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useState, useRef, useCallback } from "react"
+import { Odontogram } from "react-odontogram"
 import { motion } from "motion/react"
-import { Check, ArrowRight } from "lucide-react"
+import { Check, ArrowRight, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { BridgeData, BridgeType } from "@/stores/orderStore"
 
@@ -17,11 +18,15 @@ const BRIDGE_TYPES = [
   { id: 'maryland', label: 'Maryland', description: 'Wings bonded to adjacent teeth' },
 ]
 
-// FDI notation teeth layout
-const UPPER_RIGHT = ['18', '17', '16', '15', '14', '13', '12', '11']
-const UPPER_LEFT = ['21', '22', '23', '24', '25', '26', '27', '28']
-const LOWER_LEFT = ['31', '32', '33', '34', '35', '36', '37', '38']
-const LOWER_RIGHT = ['48', '47', '46', '45', '44', '43', '42', '41']
+interface ToothSelection {
+  id: string
+  notations: {
+    fdi: string
+    universal: string
+    palmer: string
+  }
+  type: string
+}
 
 export function BridgeSelector({ 
   bridgeData, 
@@ -29,70 +34,63 @@ export function BridgeSelector({
   onRangeSelect,
   onToggleAbutment 
 }: BridgeSelectorProps) {
-  const [selectionMode, setSelectionMode] = useState<'start' | 'end'>('start')
+  const [selectionStep, setSelectionStep] = useState<'start' | 'end' | 'adjust'>('start')
   const [tempStart, setTempStart] = useState<string | null>(null)
+  const prevSelectionRef = useRef<string[]>([])
 
-  const handleToothClick = (tooth: string) => {
-    if (selectionMode === 'start') {
-      setTempStart(tooth)
-      setSelectionMode('end')
-    } else {
-      if (tempStart) {
-        // Validate same quadrant
-        const startQuad = Math.floor(parseInt(tempStart) / 10)
-        const endQuad = Math.floor(parseInt(tooth) / 10)
-        
-        if (startQuad === endQuad) {
-          onRangeSelect(tempStart, tooth)
-        }
-      }
-      setTempStart(null)
-      setSelectionMode('start')
-    }
-  }
-
-  const isInRange = (tooth: string) => {
-    if (!bridgeData.startTooth || !bridgeData.endTooth) return false
-    return bridgeData.abutments.includes(tooth) || bridgeData.pontics.includes(tooth)
-  }
-
-  const isAbutment = (tooth: string) => bridgeData.abutments.includes(tooth)
-  const isPontic = (tooth: string) => bridgeData.pontics.includes(tooth)
-
-  const renderTooth = (tooth: string) => {
-    const inRange = isInRange(tooth)
-    const abutment = isAbutment(tooth)
-    const pontic = isPontic(tooth)
-    const isStart = tooth === tempStart
+  const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
+    const currentSelection = selections.map(s => s.notations.fdi)
+    const previousSelection = prevSelectionRef.current
     
-    return (
-      <button
-        key={tooth}
-        onClick={() => inRange ? onToggleAbutment(tooth) : handleToothClick(tooth)}
-        className={cn(
-          "w-8 h-10 rounded-lg text-xs font-medium transition-all relative",
-          inRange 
-            ? abutment 
-              ? "bg-primary text-primary-foreground"
-              : "bg-amber-500/80 text-white"
-            : isStart
-              ? "bg-primary/50 text-white ring-2 ring-primary"
-              : "bg-card border border-border/50 text-white/70 hover:border-primary/50"
-        )}
-      >
-        {tooth}
-        {abutment && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-            <span className="text-[8px] text-primary font-bold">A</span>
-          </div>
-        )}
-        {pontic && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
-            <span className="text-[8px] text-amber-900 font-bold">P</span>
-          </div>
-        )}
-      </button>
-    )
+    // Find newly added tooth
+    const addedTeeth = currentSelection.filter(t => !previousSelection.includes(t))
+    
+    prevSelectionRef.current = currentSelection
+    
+    if (addedTeeth.length === 0) return
+    
+    const clickedTooth = addedTeeth[0]
+    
+    if (selectionStep === 'start') {
+      setTempStart(clickedTooth)
+      setSelectionStep('end')
+    } else if (selectionStep === 'end' && tempStart) {
+      // Validate same quadrant
+      const startQuad = Math.floor(parseInt(tempStart) / 10)
+      const endQuad = Math.floor(parseInt(clickedTooth) / 10)
+      
+      if (startQuad === endQuad) {
+        onRangeSelect(tempStart, clickedTooth)
+        setSelectionStep('adjust')
+      } else {
+        // Different quadrant - reset and start over
+        setTempStart(clickedTooth)
+        setSelectionStep('end')
+      }
+    } else if (selectionStep === 'adjust') {
+      // In adjust mode, toggle between abutment and pontic
+      if (bridgeData.abutments.includes(clickedTooth) || bridgeData.pontics.includes(clickedTooth)) {
+        onToggleAbutment(clickedTooth)
+      }
+    }
+  }, [selectionStep, tempStart, onRangeSelect, onToggleAbutment, bridgeData])
+
+  const resetSelection = () => {
+    setTempStart(null)
+    setSelectionStep('start')
+    prevSelectionRef.current = []
+    // Reset bridge data would need to be handled by parent
+  }
+
+  const getInstructionText = () => {
+    switch (selectionStep) {
+      case 'start':
+        return 'Tap the FIRST tooth of the bridge span'
+      case 'end':
+        return `Start: ${tempStart} → Now tap the LAST tooth`
+      case 'adjust':
+        return 'Tap teeth to toggle Abutment ↔ Pontic'
+    }
   }
 
   return (
@@ -133,39 +131,33 @@ export function BridgeSelector({
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-white">Select Bridge Span</h3>
-          {tempStart && (
-            <span className="text-xs text-primary">
-              Start: {tempStart} → Select end tooth
-            </span>
+          {(tempStart || bridgeData.units > 0) && (
+            <button 
+              onClick={resetSelection}
+              className="text-xs text-primary flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reset
+            </button>
           )}
         </div>
         
-        <p className="text-xs text-white/50 mb-4">
-          {selectionMode === 'start' 
-            ? 'Tap the first tooth of the bridge span'
-            : 'Tap the last tooth of the bridge span'}
-        </p>
+        <p className="text-xs text-white/50 mb-4">{getInstructionText()}</p>
 
-        {/* Dental Chart */}
-        <div className="bg-card/50 rounded-2xl p-4 space-y-4">
-          {/* Upper Arch */}
-          <div className="text-center">
-            <p className="text-[10px] text-white/40 mb-2">UPPER</p>
-            <div className="flex justify-center gap-1">
-              {UPPER_RIGHT.map(renderTooth)}
-              <div className="w-2" />
-              {UPPER_LEFT.map(renderTooth)}
-            </div>
-          </div>
-          
-          {/* Lower Arch */}
-          <div className="text-center">
-            <div className="flex justify-center gap-1">
-              {LOWER_LEFT.map(renderTooth)}
-              <div className="w-2" />
-              {LOWER_RIGHT.map(renderTooth)}
-            </div>
-            <p className="text-[10px] text-white/40 mt-2">LOWER</p>
+        {/* Dental Chart using react-odontogram */}
+        <div className="rounded-2xl p-4 overflow-hidden">
+          <div className="odontogram-bridge-wrapper">
+            <Odontogram 
+              onChange={handleOdontogramChange}
+              className="w-full"
+              theme="dark"
+              colors={{
+                selected: '#5ebbbd',
+                hover: '#4a7096',
+                default: '#3d5a7a',
+                stroke: '#5a7a9a',
+              }}
+            />
           </div>
         </div>
       </div>
@@ -197,17 +189,54 @@ export function BridgeSelector({
               {bridgeData.startTooth} <ArrowRight className="w-3 h-3 inline" /> {bridgeData.endTooth}
             </p>
           </div>
-          <div className="flex gap-4 text-xs text-white/60">
-            <span>Abutments: {bridgeData.abutments.join(', ')}</span>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-primary/20 rounded-lg p-2">
+              <span className="text-white/50">Abutments:</span>
+              <p className="font-medium text-primary">{bridgeData.abutments.join(', ')}</p>
+            </div>
             {bridgeData.pontics.length > 0 && (
-              <span>Pontics: {bridgeData.pontics.join(', ')}</span>
+              <div className="bg-amber-500/20 rounded-lg p-2">
+                <span className="text-white/50">Pontics:</span>
+                <p className="font-medium text-amber-400">{bridgeData.pontics.join(', ')}</p>
+              </div>
             )}
           </div>
-          <p className="text-xs text-white/40 mt-2">
-            Tap on teeth in the span to toggle between abutment/pontic
-          </p>
         </motion.div>
       )}
+
+      <style>{`
+        .odontogram-bridge-wrapper svg {
+          width: 100%;
+          height: auto;
+        }
+        
+        .odontogram-bridge-wrapper .Odontogram__tooltip,
+        .odontogram-bridge-wrapper [class*="tooltip"] {
+          display: none !important;
+        }
+        
+        .odontogram-bridge-wrapper svg path {
+          fill: #3d5a7a;
+          stroke: #5a7a9a;
+          stroke-width: 1;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .odontogram-bridge-wrapper svg path:hover {
+          fill: #4a7096;
+        }
+        
+        .odontogram-bridge-wrapper svg [aria-selected="true"] path,
+        .odontogram-bridge-wrapper svg g[aria-selected="true"] path {
+          fill: #5ebbbd !important;
+          stroke: #7dd3d5 !important;
+        }
+        
+        .odontogram-bridge-wrapper svg text {
+          display: none !important;
+        }
+      `}</style>
     </div>
   )
 }

@@ -1,3 +1,5 @@
+import { useRef, useCallback } from "react"
+import { Odontogram } from "react-odontogram"
 import { motion } from "motion/react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -19,37 +21,24 @@ const ARCH_OPTIONS = [
   { id: 'both', label: 'Both Arches', description: 'Full set - upper & lower' },
 ]
 
-// Teeth for partial denture selection
-const UPPER_TEETH = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28']
-const LOWER_TEETH = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38']
+interface ToothSelection {
+  id: string
+  notations: {
+    fdi: string
+    universal: string
+    palmer: string
+  }
+  type: string
+}
 
 export function DentureSelector({ dentureData, onDentureDataChange }: DentureSelectorProps) {
-  const toggleMissingTooth = (tooth: string) => {
-    const current = dentureData.missingTeeth || []
-    const updated = current.includes(tooth)
-      ? current.filter(t => t !== tooth)
-      : [...current, tooth]
-    onDentureDataChange({ missingTeeth: updated })
-  }
+  const prevSelectionRef = useRef<string[]>(dentureData.missingTeeth || [])
 
-  const renderTooth = (tooth: string) => {
-    const isMissing = dentureData.missingTeeth?.includes(tooth)
-    
-    return (
-      <button
-        key={tooth}
-        onClick={() => toggleMissingTooth(tooth)}
-        className={cn(
-          "w-7 h-9 rounded-lg text-[10px] font-medium transition-all",
-          isMissing
-            ? "bg-red-500/80 text-white"
-            : "bg-card border border-border/50 text-white/50 hover:border-red-500/50 hover:text-white/70"
-        )}
-      >
-        {tooth}
-      </button>
-    )
-  }
+  const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
+    const currentSelection = selections.map(s => s.notations.fdi)
+    onDentureDataChange({ missingTeeth: currentSelection })
+    prevSelectionRef.current = currentSelection
+  }, [onDentureDataChange])
 
   return (
     <div className="space-y-6">
@@ -122,7 +111,7 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
         </motion.div>
       )}
 
-      {/* Partial Denture: Missing Teeth Selection */}
+      {/* Partial Denture: Missing Teeth Selection with Odontogram */}
       {dentureData.dentureType === 'partial' && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -136,33 +125,27 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
             </p>
           </div>
 
-          {/* Dental Chart */}
-          <div className="bg-card/50 rounded-2xl p-4 space-y-4">
-            {/* Upper Arch */}
-            <div className="text-center">
-              <p className="text-[10px] text-white/40 mb-2">UPPER</p>
-              <div className="flex justify-center gap-0.5 flex-wrap">
-                {UPPER_TEETH.slice(0, 8).map(renderTooth)}
-                <div className="w-1" />
-                {UPPER_TEETH.slice(8).map(renderTooth)}
-              </div>
-            </div>
-            
-            {/* Lower Arch */}
-            <div className="text-center">
-              <div className="flex justify-center gap-0.5 flex-wrap">
-                {LOWER_TEETH.slice(0, 8).map(renderTooth)}
-                <div className="w-1" />
-                {LOWER_TEETH.slice(8).map(renderTooth)}
-              </div>
-              <p className="text-[10px] text-white/40 mt-2">LOWER</p>
+          {/* Dental Chart using react-odontogram */}
+          <div className="rounded-2xl p-4 overflow-hidden">
+            <div className="odontogram-denture-wrapper">
+              <Odontogram 
+                onChange={handleOdontogramChange}
+                className="w-full"
+                theme="dark"
+                colors={{
+                  selected: '#ef4444',
+                  hover: '#7f1d1d',
+                  default: '#3d5a7a',
+                  stroke: '#5a7a9a',
+                }}
+              />
             </div>
           </div>
 
           {/* Legend */}
           <div className="flex items-center justify-center gap-4 text-xs">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-card border border-border/50" />
+              <div className="w-4 h-4 rounded bg-[#3d5a7a] border border-[#5a7a9a]" />
               <span className="text-white/60">Present</span>
             </div>
             <div className="flex items-center gap-2">
@@ -194,6 +177,40 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
           )}
         </motion.div>
       )}
+
+      <style>{`
+        .odontogram-denture-wrapper svg {
+          width: 100%;
+          height: auto;
+        }
+        
+        .odontogram-denture-wrapper .Odontogram__tooltip,
+        .odontogram-denture-wrapper [class*="tooltip"] {
+          display: none !important;
+        }
+        
+        .odontogram-denture-wrapper svg path {
+          fill: #3d5a7a;
+          stroke: #5a7a9a;
+          stroke-width: 1;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .odontogram-denture-wrapper svg path:hover {
+          fill: #7f1d1d;
+        }
+        
+        .odontogram-denture-wrapper svg [aria-selected="true"] path,
+        .odontogram-denture-wrapper svg g[aria-selected="true"] path {
+          fill: #ef4444 !important;
+          stroke: #fca5a5 !important;
+        }
+        
+        .odontogram-denture-wrapper svg text {
+          display: none !important;
+        }
+      `}</style>
     </div>
   )
 }

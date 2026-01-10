@@ -1,3 +1,5 @@
+import { useRef, useCallback } from "react"
+import { Odontogram } from "react-odontogram"
 import { motion } from "motion/react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -25,38 +27,37 @@ const ABUTMENT_TYPES = [
   { id: 'cement_retained', label: 'Cement-Retained Crown' },
 ]
 
-// Teeth positions
-const UPPER_TEETH = ['18', '17', '16', '15', '14', '13', '12', '11', '21', '22', '23', '24', '25', '26', '27', '28']
-const LOWER_TEETH = ['48', '47', '46', '45', '44', '43', '42', '41', '31', '32', '33', '34', '35', '36', '37', '38']
+interface ToothSelection {
+  id: string
+  notations: {
+    fdi: string
+    universal: string
+    palmer: string
+  }
+  type: string
+}
 
 export function ImplantSelector({ 
   implantData, 
   onImplantDataChange,
   onTogglePosition 
 }: ImplantSelectorProps) {
-  const renderPosition = (position: string) => {
-    const isSelected = implantData.positions?.includes(position)
+  const prevSelectionRef = useRef<string[]>(implantData.positions || [])
+
+  const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
+    const currentSelection = selections.map(s => s.notations.fdi)
+    const previousSelection = prevSelectionRef.current
     
-    return (
-      <button
-        key={position}
-        onClick={() => onTogglePosition(position)}
-        className={cn(
-          "w-7 h-9 rounded-lg text-[10px] font-medium transition-all relative",
-          isSelected
-            ? "bg-primary text-primary-foreground"
-            : "bg-card border border-border/50 text-white/50 hover:border-primary/50 hover:text-white/70"
-        )}
-      >
-        {position}
-        {isSelected && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-          </div>
-        )}
-      </button>
-    )
-  }
+    // Find newly added or removed teeth
+    const addedTeeth = currentSelection.filter(t => !previousSelection.includes(t))
+    const removedTeeth = previousSelection.filter(t => !currentSelection.includes(t))
+    
+    prevSelectionRef.current = currentSelection
+    
+    // Toggle each changed tooth
+    addedTeeth.forEach(tooth => onTogglePosition(tooth))
+    removedTeeth.forEach(tooth => onTogglePosition(tooth))
+  }, [onTogglePosition])
 
   return (
     <div className="space-y-6">
@@ -67,28 +68,34 @@ export function ImplantSelector({
           Tap on positions where implants are placed
         </p>
 
-        {/* Dental Chart */}
-        <div className="bg-card/50 rounded-2xl p-4 space-y-4">
-          {/* Upper Arch */}
-          <div className="text-center">
-            <p className="text-[10px] text-white/40 mb-2">UPPER</p>
-            <div className="flex justify-center gap-0.5 flex-wrap">
-              {UPPER_TEETH.slice(0, 8).map(renderPosition)}
-              <div className="w-1" />
-              {UPPER_TEETH.slice(8).map(renderPosition)}
-            </div>
-          </div>
-          
-          {/* Lower Arch */}
-          <div className="text-center">
-            <div className="flex justify-center gap-0.5 flex-wrap">
-              {LOWER_TEETH.slice(0, 8).map(renderPosition)}
-              <div className="w-1" />
-              {LOWER_TEETH.slice(8).map(renderPosition)}
-            </div>
-            <p className="text-[10px] text-white/40 mt-2">LOWER</p>
+        {/* Dental Chart using react-odontogram */}
+        <div className="rounded-2xl p-4 overflow-hidden">
+          <div className="odontogram-implant-wrapper">
+            <Odontogram 
+              onChange={handleOdontogramChange}
+              className="w-full"
+              theme="dark"
+              colors={{
+                selected: '#5ebbbd',
+                hover: '#4a7096',
+                default: '#3d5a7a',
+                stroke: '#5a7a9a',
+              }}
+            />
           </div>
         </div>
+
+        {/* Selection summary */}
+        {implantData.positions && implantData.positions.length > 0 && (
+          <div className="mt-3 p-3 bg-primary/10 rounded-xl border border-primary/30">
+            <p className="text-xs text-primary font-medium">
+              {implantData.positions.length} position{implantData.positions.length > 1 ? 's' : ''} selected
+            </p>
+            <p className="text-xs text-white/50 mt-1">
+              {implantData.positions.sort().join(', ')}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Implant System */}
@@ -158,7 +165,7 @@ export function ImplantSelector({
       )}
 
       {/* Summary */}
-      {implantData.positions && implantData.positions.length > 0 && (
+      {implantData.positions && implantData.positions.length > 0 && implantData.implantSystem && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -170,14 +177,46 @@ export function ImplantSelector({
           <p className="text-xs text-white/60 mb-2">
             Positions: {implantData.positions.sort().join(', ')}
           </p>
-          {implantData.implantSystem && (
-            <p className="text-xs text-white/50">
-              System: {IMPLANT_SYSTEMS.find(s => s.id === implantData.implantSystem)?.label}
-              {implantData.abutmentType && ` • ${ABUTMENT_TYPES.find(t => t.id === implantData.abutmentType)?.label}`}
-            </p>
-          )}
+          <p className="text-xs text-white/50">
+            System: {IMPLANT_SYSTEMS.find(s => s.id === implantData.implantSystem)?.label}
+            {implantData.abutmentType && ` • ${ABUTMENT_TYPES.find(t => t.id === implantData.abutmentType)?.label}`}
+          </p>
         </motion.div>
       )}
+
+      <style>{`
+        .odontogram-implant-wrapper svg {
+          width: 100%;
+          height: auto;
+        }
+        
+        .odontogram-implant-wrapper .Odontogram__tooltip,
+        .odontogram-implant-wrapper [class*="tooltip"] {
+          display: none !important;
+        }
+        
+        .odontogram-implant-wrapper svg path {
+          fill: #3d5a7a;
+          stroke: #5a7a9a;
+          stroke-width: 1;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        
+        .odontogram-implant-wrapper svg path:hover {
+          fill: #4a7096;
+        }
+        
+        .odontogram-implant-wrapper svg [aria-selected="true"] path,
+        .odontogram-implant-wrapper svg g[aria-selected="true"] path {
+          fill: #5ebbbd !important;
+          stroke: #7dd3d5 !important;
+        }
+        
+        .odontogram-implant-wrapper svg text {
+          display: none !important;
+        }
+      `}</style>
     </div>
   )
 }
