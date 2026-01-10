@@ -52,6 +52,12 @@ export function ToothChart({ selectedTeeth, onToothClick }: ToothChartProps) {
           <Odontogram 
             onChange={handleChange}
             className="w-full"
+            theme="dark"
+            colors={{
+              default: { fill: '#3d5a7a', stroke: '#5a7a9a' },
+              selected: { fill: '#5ebbbd', stroke: '#4aa8aa' },
+              hover: { fill: '#4a7096', stroke: '#5a7a9a' }
+            }}
           />
         </div>
         
