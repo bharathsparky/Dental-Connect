@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react"
 import { motion } from "motion/react"
 import { Check, ArrowRight, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -65,7 +65,8 @@ export function BridgeSelector({
   )
   const [tempStart, setTempStart] = useState<string | null>(bridgeData.startTooth || null)
   const prevSelectionRef = useRef<string[]>([])
-  const chartRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [colorKey, setColorKey] = useState(0) // Force re-color trigger
 
   // Sync selection step with bridgeData
   useEffect(() => {
@@ -78,59 +79,68 @@ export function BridgeSelector({
     }
   }, [bridgeData.units, bridgeData.startTooth])
 
-  // Apply custom colors to teeth via DOM manipulation
-  useEffect(() => {
-    if (!chartRef.current) return
-    
-    const svg = chartRef.current.querySelector('svg')
-    if (!svg) return
+  // Apply custom colors AFTER render using useLayoutEffect
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
 
-    // Reset all teeth to default color first
-    const allPaths = svg.querySelectorAll('g[id^="teeth-"] path')
-    allPaths.forEach(path => {
-      (path as SVGPathElement).style.fill = '#3d5a7a';
-      (path as SVGPathElement).style.stroke = '#5a7a9a';
-    })
+    // Small delay to ensure SVG is rendered
+    const timer = setTimeout(() => {
+      const svg = wrapper.querySelector('svg')
+      if (!svg) return
 
-    // Color abutment teeth - Cyan
-    bridgeData.abutments.forEach(tooth => {
-      const toothGroup = svg.querySelector(`#teeth-${tooth}`)
-      if (toothGroup) {
-        const paths = toothGroup.querySelectorAll('path')
+      // Reset ALL teeth to default color first
+      const allGroups = svg.querySelectorAll('g[id^="teeth-"]')
+      allGroups.forEach(group => {
+        const paths = group.querySelectorAll('path')
         paths.forEach(path => {
-          (path as SVGPathElement).style.fill = '#5ebbbd';
-          (path as SVGPathElement).style.stroke = '#3d9a9c';
+          path.setAttribute('fill', '#3d5a7a')
+          path.setAttribute('stroke', '#5a7a9a')
         })
-      }
-    })
+      })
 
-    // Color pontic teeth - Amber
-    bridgeData.pontics.forEach(tooth => {
-      const toothGroup = svg.querySelector(`#teeth-${tooth}`)
-      if (toothGroup) {
-        const paths = toothGroup.querySelectorAll('path')
-        paths.forEach(path => {
-          (path as SVGPathElement).style.fill = '#f59e0b';
-          (path as SVGPathElement).style.stroke = '#d97706';
-        })
+      // Color temp start (first tooth selected, waiting for second)
+      if (tempStart && selectionStep === 'end') {
+        const startGroup = svg.querySelector(`g[id="teeth-${tempStart}"]`)
+        if (startGroup) {
+          const paths = startGroup.querySelectorAll('path')
+          paths.forEach(path => {
+            path.setAttribute('fill', '#5ebbbd')
+            path.setAttribute('stroke', '#4aa8aa')
+          })
+        }
       }
-    })
 
-    // Color temp start selection - Semi-transparent cyan
-    if (tempStart && selectionStep === 'end') {
-      const toothGroup = svg.querySelector(`#teeth-${tempStart}`)
-      if (toothGroup) {
-        const paths = toothGroup.querySelectorAll('path')
-        paths.forEach(path => {
-          (path as SVGPathElement).style.fill = 'rgba(94, 187, 189, 0.5)';
-          (path as SVGPathElement).style.stroke = '#5ebbbd';
-        })
-      }
-    }
-  }, [bridgeData.abutments, bridgeData.pontics, tempStart, selectionStep])
+      // Color abutments - Cyan
+      bridgeData.abutments.forEach(tooth => {
+        const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
+        if (group) {
+          const paths = group.querySelectorAll('path')
+          paths.forEach(path => {
+            path.setAttribute('fill', '#5ebbbd')
+            path.setAttribute('stroke', '#3d9a9c')
+          })
+        }
+      })
 
-  // Handle tooth click from odontogram
-  const handleOdontogramChange = useCallback((selections: ToothSelection[]) => {
+      // Color pontics - Amber  
+      bridgeData.pontics.forEach(tooth => {
+        const group = svg.querySelector(`g[id="teeth-${tooth}"]`)
+        if (group) {
+          const paths = group.querySelectorAll('path')
+          paths.forEach(path => {
+            path.setAttribute('fill', '#f59e0b')
+            path.setAttribute('stroke', '#d97706')
+          })
+        }
+      })
+    }, 50) // Small delay for SVG render
+
+    return () => clearTimeout(timer)
+  }, [bridgeData.abutments, bridgeData.pontics, tempStart, selectionStep, colorKey])
+
+  // Handle tooth click from odontogram - same pattern as ToothChart
+  const handleChange = useCallback((selections: ToothSelection[]) => {
     const currentSelection = selections.map(s => s.notations.fdi)
     const previousSelection = prevSelectionRef.current
     
@@ -147,6 +157,7 @@ export function BridgeSelector({
       // First tooth of range
       setTempStart(clickedTooth)
       setSelectionStep('end')
+      setColorKey(k => k + 1) // Trigger re-color
     } else if (selectionStep === 'end' && tempStart) {
       // Second tooth - validate and create range
       const startQuad = Math.floor(parseInt(tempStart) / 10)
@@ -158,23 +169,26 @@ export function BridgeSelector({
           // Valid bridge span
           onRangeSelect(tempStart, clickedTooth)
           setSelectionStep('adjust')
+          setColorKey(k => k + 1)
         } else {
           // Not enough teeth, restart with new tooth
           setTempStart(clickedTooth)
           prevSelectionRef.current = [clickedTooth]
+          setColorKey(k => k + 1)
         }
       } else {
         // Different quadrant, restart
         setTempStart(clickedTooth)
         prevSelectionRef.current = [clickedTooth]
+        setColorKey(k => k + 1)
       }
     } else if (selectionStep === 'adjust') {
       // Toggle abutment/pontic for existing bridge teeth
       const allBridgeTeeth = [...bridgeData.abutments, ...bridgeData.pontics]
       if (allBridgeTeeth.includes(clickedTooth)) {
         onToggleAbutment(clickedTooth)
+        setColorKey(k => k + 1)
       }
-      // Keep ref synced
       prevSelectionRef.current = allBridgeTeeth
     }
   }, [selectionStep, tempStart, bridgeData.abutments, bridgeData.pontics, onRangeSelect, onToggleAbutment])
@@ -184,6 +198,7 @@ export function BridgeSelector({
     setSelectionStep('start')
     prevSelectionRef.current = []
     onReset()
+    setColorKey(k => k + 1)
   }
 
   const getInstructionText = () => {
@@ -193,7 +208,7 @@ export function BridgeSelector({
       case 'end':
         return `${tempStart} selected → Tap the LAST tooth (min 3)`
       case 'adjust':
-        return 'Tap to toggle: Abutment ↔ Pontic'
+        return 'Tap teeth or pills to toggle Abutment/Pontic'
     }
   }
 
@@ -253,20 +268,22 @@ export function BridgeSelector({
           {getInstructionText()}
         </div>
 
-        {/* Odontogram Chart */}
-        <div ref={chartRef} className="bridge-chart bg-card/50 rounded-xl p-3 border border-border/30 overflow-hidden">
-          <Odontogram
-            onChange={handleOdontogramChange}
-            className="w-full"
-            theme="dark"
-            colors={{
-              tooth: '#3d5a7a',
-              toothStroke: '#5a7a9a',
-              selected: '#5ebbbd',
-              selectedStroke: '#4aa8aa',
-              hover: '#4a7096'
-            }}
-          />
+        {/* Odontogram Chart - SAME as ToothChart */}
+        <div className="rounded-2xl p-4 overflow-hidden bg-card/30 border border-border/30">
+          <div ref={wrapperRef} className="bridge-odontogram">
+            <Odontogram
+              onChange={handleChange}
+              className="w-full"
+              theme="dark"
+              colors={{
+                tooth: '#3d5a7a',
+                toothStroke: '#5a7a9a',
+                selected: '#5ebbbd',
+                selectedStroke: '#4aa8aa',
+                hover: '#4a7096'
+              }}
+            />
+          </div>
         </div>
 
         {/* Legend */}
@@ -283,13 +300,16 @@ export function BridgeSelector({
 
         {/* Quick toggle pills for selected teeth */}
         {bridgeData.units >= 3 && (
-          <div className="mt-3 flex flex-wrap gap-1 justify-center">
+          <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
             {[...bridgeData.abutments, ...bridgeData.pontics].sort().map(tooth => (
               <button
                 key={tooth}
-                onClick={() => onToggleAbutment(tooth)}
+                onClick={() => {
+                  onToggleAbutment(tooth)
+                  setColorKey(k => k + 1)
+                }}
                 className={cn(
-                  "px-2 py-1 rounded text-xs font-medium transition-all",
+                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
                   bridgeData.abutments.includes(tooth)
                     ? "bg-primary text-primary-foreground"
                     : "bg-amber-500 text-white"
@@ -335,29 +355,36 @@ export function BridgeSelector({
         </motion.div>
       )}
 
-      {/* Base styles */}
+      {/* Same styles as ToothChart */}
       <style>{`
-        .bridge-chart svg {
+        .bridge-odontogram svg {
           width: 100%;
           height: auto;
         }
         
-        .bridge-chart .Odontogram__tooltip,
-        .bridge-chart [class*="tooltip"] {
+        .bridge-odontogram .Odontogram__tooltip,
+        .bridge-odontogram [class*="tooltip"] {
           display: none !important;
         }
         
-        .bridge-chart svg text {
-          display: none !important;
-        }
-        
-        .bridge-chart svg g[id^="teeth-"] path {
+        .bridge-odontogram svg path {
+          stroke-width: 1;
+          transition: all 0.15s ease;
           cursor: pointer;
-          transition: all 0.2s ease;
         }
         
-        .bridge-chart svg g[id^="teeth-"]:hover path {
-          filter: brightness(1.2);
+        .bridge-odontogram svg path:hover {
+          filter: brightness(1.15);
+        }
+        
+        .bridge-odontogram svg text {
+          display: none !important;
+        }
+        
+        /* Override library's selected state - we handle colors manually */
+        .bridge-odontogram svg [aria-selected="true"] path,
+        .bridge-odontogram svg g[aria-selected="true"] path {
+          /* Don't apply default selected color - we set colors via JS */
         }
       `}</style>
     </div>
