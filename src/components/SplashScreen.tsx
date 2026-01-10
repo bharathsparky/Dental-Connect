@@ -45,7 +45,7 @@ export function SplashScreen({ onComplete, minDuration = 2500 }: SplashScreenPro
           transition={{ duration: 0.5 }}
           className="w-full h-full flex flex-col items-center justify-center"
           style={{
-            background: '#73B6D9'
+            background: 'linear-gradient(180deg, #6193BB 0%, #82B4D5 100%)'
           }}
         >
           {/* Lottie Animation */}
