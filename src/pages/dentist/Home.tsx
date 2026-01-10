@@ -1,6 +1,6 @@
 import { motion } from "motion/react"
 import { useNavigate } from "react-router-dom"
-import { Plus, ChevronRight, Clock, Bell } from "lucide-react"
+import { Plus, ChevronRight, Clock, Bell, AlertCircle, CheckCircle2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MOCK_ORDERS } from "@/stores/orderStore"
@@ -25,6 +25,33 @@ export function Home() {
   const navigate = useNavigate()
   const activeOrders = MOCK_ORDERS.filter(o => o.status !== 'delivered')
   const recentLabs = MOCK_LABS.slice(0, 3)
+
+  // Calculate relevant KPIs
+  const today = new Date()
+  const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+
+  const dueSoon = MOCK_ORDERS.filter(o => {
+    const deliveryDate = new Date(o.estimatedDelivery)
+    return deliveryDate <= sevenDaysFromNow && 
+           deliveryDate >= today && 
+           o.status !== 'delivered' && 
+           o.status !== 'ready'
+  }).length
+
+  const inProduction = MOCK_ORDERS.filter(o => 
+    o.status === 'processing' || o.status === 'quality'
+  ).length
+
+  const readyForPickup = MOCK_ORDERS.filter(o => 
+    o.status === 'ready'
+  ).length
+
+  const completedThisMonth = MOCK_ORDERS.filter(o => {
+    if (o.status !== 'delivered') return false
+    const deliveredDate = o.estimatedDelivery // Using estimatedDelivery as delivered date for mock
+    return deliveredDate >= startOfMonth
+  }).length
 
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
@@ -63,20 +90,58 @@ export function Home() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-3 gap-3"
+          className="grid grid-cols-2 gap-3"
         >
           {[
-            { label: 'Active', value: activeOrders.length },
-            { label: 'Pending', value: 2 },
-            { label: 'This Month', value: 18 },
-          ].map((stat) => (
-            <Card key={stat.label} variant="gradient" className="text-center py-4">
-              <CardContent className="p-0">
-                <p className="text-2xl font-semibold text-white">{stat.value}</p>
-                <p className="text-xs text-white/50 mt-1">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+            { 
+              label: 'Due Soon', 
+              value: dueSoon,
+              icon: AlertCircle,
+              color: 'text-amber-400',
+              bgColor: 'bg-amber-500/10',
+              description: 'Next 7 days'
+            },
+            { 
+              label: 'In Production', 
+              value: inProduction,
+              icon: Package,
+              color: 'text-primary',
+              bgColor: 'bg-primary/10',
+              description: 'Being made'
+            },
+            { 
+              label: 'Ready', 
+              value: readyForPickup,
+              icon: CheckCircle2,
+              color: 'text-emerald-400',
+              bgColor: 'bg-emerald-500/10',
+              description: 'For pickup'
+            },
+            { 
+              label: 'Completed', 
+              value: completedThisMonth,
+              icon: CheckCircle2,
+              color: 'text-white',
+              bgColor: 'bg-white/5',
+              description: 'This month'
+            },
+          ].map((stat) => {
+            const Icon = stat.icon
+            return (
+              <Card key={stat.label} variant="gradient" className="overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className={cn("p-2 rounded-lg", stat.bgColor)}>
+                      <Icon className={cn("w-4 h-4", stat.color)} />
+                    </div>
+                    <p className={cn("text-2xl font-semibold", stat.color)}>{stat.value}</p>
+                  </div>
+                  <p className="text-xs font-medium text-white">{stat.label}</p>
+                  <p className="text-[10px] text-white/40 mt-0.5">{stat.description}</p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </motion.div>
 
         {/* Active Orders */}
