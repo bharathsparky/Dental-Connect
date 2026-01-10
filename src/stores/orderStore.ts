@@ -11,6 +11,7 @@ export type AttachmentType = 'ball' | 'locator' | 'bar' | 'era' | null
 export type TeethMould = 'square' | 'ovoid' | 'tapering' | 'match_existing' | null
 export type BridgeType = 'conventional' | 'cantilever' | 'maryland' | 'precision_attachment' | null
 export type PonticDesign = 'ridge_lap' | 'modified_ridge_lap' | 'sanitary' | 'ovate' | null
+export type ExtractionStatus = 'fresh' | 'recent' | 'healed' | null  // fresh: <2 weeks, recent: 2 weeks - 3 months, healed: >3 months
 export type MarginType = 'shoulder' | 'chamfer' | 'knife_edge' | 'feather_edge' | null
 export type CrownSubtype = 'full' | 'three_quarter' | null
 export type OcclusalReduction = 'standard' | 'minimal' | 'extensive' | null
@@ -52,6 +53,9 @@ export interface BridgeData {
   pontics: string[]    // Positions that are missing (will be replaced)
   units: number
   attachmentPositions: string[]  // For precision attachment: which abutment(s) get the attachment
+  extractionStatus: ExtractionStatus  // Is the pontic site freshly extracted?
+  extractionDate: string | null  // Approximate date of extraction
+  immediateProvisionalization: boolean  // Need immediate temporary bridge?
 }
 
 // Denture-specific data
@@ -418,6 +422,9 @@ const initialBridgeData: BridgeData = {
   pontics: [],
   units: 0,
   attachmentPositions: [],
+  extractionStatus: null,
+  extractionDate: null,
+  immediateProvisionalization: false,
 }
 
 const initialDentureData: DentureData = {

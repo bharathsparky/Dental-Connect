@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react"
 import { motion } from "motion/react"
-import { Check, ArrowRight, RotateCcw, Link2 } from "lucide-react"
+import { Check, ArrowRight, RotateCcw, Link2, Calendar, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Odontogram } from "react-odontogram"
-import type { BridgeData, BridgeType, PonticDesign } from "@/stores/orderStore"
+import type { BridgeData, BridgeType, PonticDesign, ExtractionStatus } from "@/stores/orderStore"
 
 interface BridgeSelectorProps {
   bridgeData: BridgeData
@@ -36,6 +36,27 @@ const PONTIC_DESIGNS = [
   { id: 'modified_ridge_lap', label: 'Modified Ridge Lap', description: 'Convex labial, concave lingual' },
   { id: 'sanitary', label: 'Sanitary (Hygienic)', description: 'No ridge contact, easy clean' },
   { id: 'ovate', label: 'Ovate', description: 'Convex, sits in prepared socket' },
+]
+
+const EXTRACTION_STATUS_OPTIONS = [
+  { 
+    id: 'fresh', 
+    label: 'Fresh Extraction', 
+    description: 'Within 2 weeks',
+    warning: 'Socket still healing, consider ovate pontic for tissue preservation'
+  },
+  { 
+    id: 'recent', 
+    label: 'Recent Extraction', 
+    description: '2 weeks to 3 months',
+    warning: 'Active bone remodeling, may need provisional first'
+  },
+  { 
+    id: 'healed', 
+    label: 'Fully Healed', 
+    description: 'More than 3 months',
+    warning: null
+  },
 ]
 
 // Get all teeth in a range (same quadrant)
@@ -379,6 +400,120 @@ export function BridgeSelector({
         </motion.div>
       )}
 
+      {/* Extraction Status - Shows when pontics are selected */}
+      {bridgeData.units >= 3 && bridgeData.pontics.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-medium text-white">Extraction Status</h3>
+          </div>
+          <p className="text-xs text-white/50 mb-3">
+            When were the pontic site teeth extracted?
+          </p>
+          <div className="space-y-2">
+            {EXTRACTION_STATUS_OPTIONS.map((option) => {
+              const isSelected = bridgeData.extractionStatus === option.id
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => onBridgeDataChange({ 
+                    extractionStatus: option.id as ExtractionStatus,
+                    // Auto-suggest ovate pontic for fresh extractions
+                    ...(option.id === 'fresh' && !bridgeData.ponticDesign ? { ponticDesign: 'ovate' } : {})
+                  })}
+                  className={cn(
+                    "w-full text-left p-3 rounded-xl border transition-all",
+                    isSelected
+                      ? "bg-selected border-primary/50"
+                      : "bg-card border-border/50 hover:border-white/20"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={cn(
+                        "font-medium text-sm",
+                        isSelected ? "text-primary" : "text-white"
+                      )}>
+                        {option.label}
+                      </p>
+                      <p className="text-xs text-white/50">{option.description}</p>
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-primary" />}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          
+          {/* Warning for fresh/recent extractions */}
+          {(bridgeData.extractionStatus === 'fresh' || bridgeData.extractionStatus === 'recent') && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 p-3 bg-amber-500/10 rounded-xl border border-amber-500/30"
+            >
+              <div className="flex gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-amber-400 font-medium">
+                    {bridgeData.extractionStatus === 'fresh' ? 'Fresh Extraction Site' : 'Recent Extraction Site'}
+                  </p>
+                  <p className="text-[10px] text-white/60 mt-1">
+                    {EXTRACTION_STATUS_OPTIONS.find(o => o.id === bridgeData.extractionStatus)?.warning}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Immediate provisionalization option for fresh extractions */}
+          {bridgeData.extractionStatus === 'fresh' && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3"
+            >
+              <button
+                onClick={() => onBridgeDataChange({ 
+                  immediateProvisionalization: !bridgeData.immediateProvisionalization 
+                })}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between",
+                  bridgeData.immediateProvisionalization
+                    ? "bg-selected border-primary/50"
+                    : "bg-card border-border/50 hover:border-white/20"
+                )}
+              >
+                <div>
+                  <p className={cn(
+                    "font-medium text-sm",
+                    bridgeData.immediateProvisionalization ? "text-primary" : "text-white"
+                  )}>
+                    Immediate Provisional Bridge
+                  </p>
+                  <p className="text-xs text-white/50">
+                    Need temporary bridge for aesthetics during healing
+                  </p>
+                </div>
+                <div className={cn(
+                  "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                  bridgeData.immediateProvisionalization
+                    ? "bg-primary border-primary"
+                    : "border-white/30"
+                )}>
+                  {bridgeData.immediateProvisionalization && (
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  )}
+                </div>
+              </button>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
+
       {/* Precision Attachment Position - Only show for precision attachment bridges */}
       {bridgeData.bridgeType === 'precision_attachment' && bridgeData.units >= 3 && bridgeData.abutments.length > 0 && (
         <motion.div
@@ -484,11 +619,18 @@ export function BridgeSelector({
             </div>
           </div>
           
-          {(bridgeData.ponticDesign || (bridgeData.bridgeType === 'precision_attachment' && bridgeData.attachmentPositions && bridgeData.attachmentPositions.length > 0)) && (
+          {(bridgeData.ponticDesign || bridgeData.extractionStatus || (bridgeData.bridgeType === 'precision_attachment' && bridgeData.attachmentPositions && bridgeData.attachmentPositions.length > 0)) && (
             <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
               {bridgeData.ponticDesign && (
                 <p className="text-[9px] text-white/50">
                   Pontic Design: {PONTIC_DESIGNS.find(d => d.id === bridgeData.ponticDesign)?.label}
+                </p>
+              )}
+              {bridgeData.extractionStatus && (
+                <p className="text-[9px] text-white/50 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Extraction: {EXTRACTION_STATUS_OPTIONS.find(o => o.id === bridgeData.extractionStatus)?.label}
+                  {bridgeData.immediateProvisionalization && ' + Immediate Provisional'}
                 </p>
               )}
               {bridgeData.bridgeType === 'precision_attachment' && bridgeData.attachmentPositions && bridgeData.attachmentPositions.length > 0 && (
