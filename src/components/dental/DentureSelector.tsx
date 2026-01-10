@@ -334,8 +334,7 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
           <div className="p-4 bg-primary/10 border border-primary/30 rounded-xl">
             <p className="text-sm text-primary font-medium mb-1">Implant-Retained Overdenture</p>
             <p className="text-xs text-white/60">
-              Select the implant positions that will retain the denture.
-              Typically 2-4 implants for mandibular, 4-6 for maxillary.
+              Overdentures are supported by implants for improved stability and retention.
             </p>
           </div>
 
@@ -359,11 +358,49 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
                   )}>
                     {arch.label}
                   </p>
-                  <p className="text-[10px] text-white/50">{arch.description}</p>
+                  <p className="text-[10px] text-white/50">
+                    {arch.id === 'lower' 
+                      ? '2-4 implants (most common)' 
+                      : '4-6 implants recommended'}
+                  </p>
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Clinical Guidance based on arch */}
+          {dentureData.arch && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "p-3 rounded-xl border text-xs",
+                dentureData.arch === 'lower' 
+                  ? "bg-emerald-500/10 border-emerald-500/30" 
+                  : "bg-amber-500/10 border-amber-500/30"
+              )}
+            >
+              {dentureData.arch === 'lower' ? (
+                <>
+                  <p className="font-medium text-emerald-400 mb-1">Mandibular Overdenture</p>
+                  <p className="text-white/60">
+                    <strong>2-implant overdenture</strong> is the gold standard (McGill Consensus). 
+                    Common positions: canine region (33, 43). 
+                    4 implants provide better stability if budget allows.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-amber-400 mb-1">Maxillary Overdenture</p>
+                  <p className="text-white/60">
+                    Requires <strong>4-6 implants</strong> due to softer bone quality. 
+                    Consider palate-free design for comfort. 
+                    Bar attachment often preferred for splinting.
+                  </p>
+                </>
+              )}
+            </motion.div>
+          )}
 
           {dentureData.arch && (
             <motion.div
@@ -372,7 +409,7 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
             >
               <h3 className="text-sm font-medium text-white mb-1">Select Implant Positions</h3>
               <p className="text-xs text-white/50 mb-4">
-                Tap on positions where implants are/will be placed
+                Tap on {dentureData.arch === 'lower' ? 'lower' : 'upper'} arch positions where implants are/will be placed
               </p>
 
               <div className="rounded-2xl p-4 overflow-hidden">
@@ -392,9 +429,23 @@ export function DentureSelector({ dentureData, onDentureDataChange }: DentureSel
               </div>
 
               {dentureData.implantPositions && dentureData.implantPositions.length > 0 && (
-                <div className="mt-3 p-3 bg-primary/10 rounded-xl border border-primary/30">
-                  <p className="text-xs text-primary font-medium">
-                    {dentureData.implantPositions.length} implant position{dentureData.implantPositions.length > 1 ? 's' : ''}
+                <div className={cn(
+                  "mt-3 p-3 rounded-xl border",
+                  (dentureData.arch === 'lower' && dentureData.implantPositions.length < 2) ||
+                  (dentureData.arch === 'upper' && dentureData.implantPositions.length < 4)
+                    ? "bg-amber-500/10 border-amber-500/30"
+                    : "bg-primary/10 border-primary/30"
+                )}>
+                  <p className={cn(
+                    "text-xs font-medium",
+                    (dentureData.arch === 'lower' && dentureData.implantPositions.length < 2) ||
+                    (dentureData.arch === 'upper' && dentureData.implantPositions.length < 4)
+                      ? "text-amber-400"
+                      : "text-primary"
+                  )}>
+                    {dentureData.implantPositions.length} implant position{dentureData.implantPositions.length > 1 ? 's' : ''} selected
+                    {dentureData.arch === 'lower' && dentureData.implantPositions.length < 2 && " (minimum 2 recommended)"}
+                    {dentureData.arch === 'upper' && dentureData.implantPositions.length < 4 && " (minimum 4 recommended)"}
                   </p>
                   <p className="text-xs text-white/50 mt-1">
                     {dentureData.implantPositions.sort().join(', ')}
