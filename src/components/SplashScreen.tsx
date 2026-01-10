@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import Lottie from 'lottie-react'
 
@@ -10,6 +10,7 @@ interface SplashScreenProps {
 export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenProps) {
   const [animationData, setAnimationData] = useState<object | null>(null)
   const [isExiting, setIsExiting] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     // Load the Lottie animation
@@ -18,16 +19,44 @@ export function SplashScreen({ onComplete, minDuration = 5500 }: SplashScreenPro
       .then(data => setAnimationData(data))
       .catch(console.error)
 
+    // Play background music
+    audioRef.current = new Audio('/bg.wav')
+    audioRef.current.volume = 0.5
+    audioRef.current.play().catch(() => {
+      // Autoplay might be blocked, that's okay
+      console.log('Audio autoplay blocked')
+    })
+
     // Start exit animation after minimum duration
     const timer = setTimeout(() => {
       setIsExiting(true)
     }, minDuration)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      // Fade out and stop audio
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
   }, [minDuration])
 
   useEffect(() => {
     if (isExiting) {
+      // Fade out audio
+      if (audioRef.current) {
+        const audio = audioRef.current
+        const fadeOut = setInterval(() => {
+          if (audio.volume > 0.1) {
+            audio.volume -= 0.1
+          } else {
+            audio.pause()
+            clearInterval(fadeOut)
+          }
+        }, 50)
+      }
+      
       // Give time for exit animation
       const exitTimer = setTimeout(() => {
         onComplete()
