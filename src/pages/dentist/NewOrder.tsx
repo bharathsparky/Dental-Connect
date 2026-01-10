@@ -17,9 +17,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { ToothChart } from "@/components/dental/ToothChart"
+import { BridgeSelector } from "@/components/dental/BridgeSelector"
+import { DentureSelector } from "@/components/dental/DentureSelector"
+import { ImplantSelector } from "@/components/dental/ImplantSelector"
 import { ShadeGuide } from "@/components/dental/ShadeGuide"
 import { MaterialSelector } from "@/components/order/MaterialSelector"
 import { useOrderStore } from "@/stores/orderStore"
+import type { BridgeType } from "@/stores/orderStore"
 import { MOCK_LABS, getLabById } from "@/data/mockLabs"
 import { getMaterialById } from "@/data/materials"
 import { getShadeByCode } from "@/data/vitaShades"
@@ -31,7 +35,7 @@ const FAVORITE_LAB_IDS = ['lab-1', 'lab-3']
 const STEPS = [
   { id: 1, title: 'Select Lab' },
   { id: 2, title: 'Case Type' },
-  { id: 3, title: 'Teeth' },
+  { id: 3, title: 'Selection' },
   { id: 4, title: 'Impression' },
   { id: 5, title: 'Material' },
   { id: 6, title: 'Shade' },
@@ -47,10 +51,10 @@ const IMPRESSION_MATERIALS = [
 ]
 
 const CASE_TYPES = [
-  { id: 'crown', label: 'Crown', description: 'Single tooth restoration' },
-  { id: 'bridge', label: 'Bridge', description: 'Multiple teeth' },
-  { id: 'denture', label: 'Denture', description: 'Removable prosthesis' },
-  { id: 'implant', label: 'Implant', description: 'Implant crown' },
+  { id: 'crown', label: 'Crown', description: 'Single/multiple tooth restorations', icon: '👑' },
+  { id: 'bridge', label: 'Bridge', description: 'Replace missing teeth with span', icon: '🌉' },
+  { id: 'denture', label: 'Denture', description: 'Full or partial removable prosthesis', icon: '🦷' },
+  { id: 'implant', label: 'Implant', description: 'Implant-supported restoration', icon: '🔩' },
 ]
 
 const PRIORITIES = [
@@ -74,11 +78,23 @@ export function NewOrder() {
   const [labServiceFilter, setLabServiceFilter] = useState('All')
   const [labSortBy, setLabSortBy] = useState('rating')
 
+  // Check if can proceed based on case type
   const canProceed = () => {
     switch (store.step) {
       case 1: return !!store.labId
       case 2: return !!store.caseType
-      case 3: return store.selectedTeeth.length > 0
+      case 3: 
+        // Different validation based on case type
+        switch (store.caseType) {
+          case 'crown': return store.selectedTeeth.length > 0
+          case 'bridge': return store.bridgeData.units >= 3 // Minimum 3-unit bridge
+          case 'denture': 
+            return store.dentureData.dentureType === 'full' 
+              ? !!store.dentureData.arch
+              : (store.dentureData.missingTeeth?.length || 0) > 0
+          case 'implant': return store.implantData.positions.length > 0
+          default: return false
+        }
       case 4: return store.hasImpression && !!store.impressionMaterial
       case 5: return !!store.material
       case 6: return !!store.shade
@@ -99,6 +115,25 @@ export function NewOrder() {
   const selectedLab = store.labId ? getLabById(store.labId) : null
   const selectedMaterial = store.material ? getMaterialById(store.material) : null
   const selectedShade = store.shade ? getShadeByCode(store.shade) : null
+
+  // Get teeth summary for review
+  const getTeethSummary = () => {
+    switch (store.caseType) {
+      case 'crown':
+        return store.selectedTeeth.join(', ')
+      case 'bridge':
+        return `${store.bridgeData.units}-unit (${store.bridgeData.startTooth}-${store.bridgeData.endTooth})`
+      case 'denture':
+        if (store.dentureData.dentureType === 'full') {
+          return `Full ${store.dentureData.arch} arch`
+        }
+        return `Partial (${store.dentureData.missingTeeth?.length || 0} teeth)`
+      case 'implant':
+        return store.implantData.positions.join(', ')
+      default:
+        return '-'
+    }
+  }
 
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
@@ -353,7 +388,7 @@ export function NewOrder() {
             {/* Step 2: Case Type */}
             {store.step === 2 && (
               <div className="space-y-3">
-                <p className="text-sm text-white/50 mb-4">Select restoration type</p>
+                <p className="text-sm text-white/50 mb-4">What type of restoration do you need?</p>
                 {CASE_TYPES.map((type) => (
                   <motion.button
                     key={type.id}
@@ -366,8 +401,14 @@ export function NewOrder() {
                     )}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center gap-4">
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
+                        store.caseType === type.id ? "bg-primary/20" : "bg-white/5"
+                      )}>
+                        {type.icon}
+                      </div>
+                      <div className="flex-1">
                         <p className={cn(
                           "font-medium",
                           store.caseType === type.id ? "text-primary" : "text-white"
@@ -385,12 +426,47 @@ export function NewOrder() {
               </div>
             )}
 
-            {/* Step 3: Teeth */}
+            {/* Step 3: Teeth/Selection - Different UI based on case type */}
             {store.step === 3 && (
-              <ToothChart
-                selectedTeeth={store.selectedTeeth}
-                onToothClick={store.toggleTooth}
-              />
+              <div>
+                {/* Crown: Individual tooth selection */}
+                {store.caseType === 'crown' && (
+                  <div>
+                    <p className="text-sm text-white/50 mb-4">Select teeth for crown restorations</p>
+                    <ToothChart
+                      selectedTeeth={store.selectedTeeth}
+                      onToothClick={store.toggleTooth}
+                    />
+                  </div>
+                )}
+
+                {/* Bridge: Range selection with abutment/pontic */}
+                {store.caseType === 'bridge' && (
+                  <BridgeSelector
+                    bridgeData={store.bridgeData}
+                    onBridgeTypeChange={(type: BridgeType) => store.setBridgeData({ bridgeType: type })}
+                    onRangeSelect={store.setBridgeRange}
+                    onToggleAbutment={store.toggleAbutment}
+                  />
+                )}
+
+                {/* Denture: Arch/partial selection */}
+                {store.caseType === 'denture' && (
+                  <DentureSelector
+                    dentureData={store.dentureData}
+                    onDentureDataChange={store.setDentureData}
+                  />
+                )}
+
+                {/* Implant: Position selection with system */}
+                {store.caseType === 'implant' && (
+                  <ImplantSelector
+                    implantData={store.implantData}
+                    onImplantDataChange={store.setImplantData}
+                    onTogglePosition={store.toggleImplantPosition}
+                  />
+                )}
+              </div>
             )}
 
             {/* Step 4: Impression */}
@@ -590,9 +666,32 @@ export function NewOrder() {
                         <p className="font-medium text-white capitalize">{store.caseType}</p>
                       </div>
                       <div>
-                        <p className="text-white/50 text-xs">Teeth</p>
-                        <p className="font-medium text-white">{store.selectedTeeth.join(', ')}</p>
+                        <p className="text-white/50 text-xs">Selection</p>
+                        <p className="font-medium text-white">{getTeethSummary()}</p>
                       </div>
+                      
+                      {/* Bridge-specific details */}
+                      {store.caseType === 'bridge' && (
+                        <>
+                          <div>
+                            <p className="text-white/50 text-xs">Abutments</p>
+                            <p className="font-medium text-white">{store.bridgeData.abutments.join(', ')}</p>
+                          </div>
+                          <div>
+                            <p className="text-white/50 text-xs">Pontics</p>
+                            <p className="font-medium text-white">{store.bridgeData.pontics.join(', ') || '-'}</p>
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Implant-specific details */}
+                      {store.caseType === 'implant' && store.implantData.implantSystem && (
+                        <div>
+                          <p className="text-white/50 text-xs">Implant System</p>
+                          <p className="font-medium text-white capitalize">{store.implantData.implantSystem}</p>
+                        </div>
+                      )}
+                      
                       <div>
                         <p className="text-white/50 text-xs">Impression</p>
                         <p className="font-medium text-white capitalize">
