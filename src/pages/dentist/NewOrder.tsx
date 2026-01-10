@@ -129,9 +129,17 @@ export function NewOrder() {
             // Partial denture
             return (store.dentureData.missingTeeth?.length || 0) > 0
           case 'implant': 
+            // For healing stage, only need positions
+            if (store.implantData.implantStage === 'healing') {
+              return store.implantData.positions.length > 0 && !!store.implantData.implantStage
+            }
+            // For ready/impression_taken, need full details
             return store.implantData.positions.length > 0 && 
+                   !!store.implantData.implantStage &&
                    !!store.implantData.implantSystem &&
+                   !!store.implantData.platformSize &&
                    !!store.implantData.connectionType &&
+                   !!store.implantData.impressionTechnique &&
                    !!store.implantData.restorationType &&
                    !!store.implantData.abutmentType
           case 'veneer':
@@ -1002,12 +1010,50 @@ export function NewOrder() {
                             <p className="text-white/50 text-xs">Implant System</p>
                             <p className="font-medium text-white capitalize">{store.implantData.implantSystem}</p>
                           </div>
+                          {store.implantData.platformSize && (
+                            <div>
+                              <p className="text-white/50 text-xs">Platform</p>
+                              <p className="font-medium text-white capitalize">{store.implantData.platformSize?.replace('_', ' ')}</p>
+                            </div>
+                          )}
+                          {store.implantData.implantDiameter && (
+                            <div>
+                              <p className="text-white/50 text-xs">Diameter</p>
+                              <p className="font-medium text-white">{store.implantData.implantDiameter} mm</p>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-white/50 text-xs">Connection</p>
+                            <p className="font-medium text-white capitalize">
+                              {store.implantData.connectionType?.replace('_', ' ')}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-white/50 text-xs">Impression</p>
+                            <p className="font-medium text-white capitalize">
+                              {store.implantData.impressionTechnique?.replace('_', ' ')}
+                            </p>
+                          </div>
                           <div>
                             <p className="text-white/50 text-xs">Restoration Type</p>
                             <p className="font-medium text-white capitalize">
                               {store.implantData.restorationType?.replace('_', '-')}
                             </p>
                           </div>
+                          <div>
+                            <p className="text-white/50 text-xs">Abutment</p>
+                            <p className="font-medium text-white capitalize">
+                              {store.implantData.abutmentType?.replace(/_/g, ' ')}
+                            </p>
+                          </div>
+                          {store.implantData.componentsIncluded && store.implantData.componentsIncluded.length > 0 && (
+                            <div className="col-span-2">
+                              <p className="text-white/50 text-xs">Components Included</p>
+                              <p className="font-medium text-white text-xs">
+                                {store.implantData.componentsIncluded.map(c => c.replace(/_/g, ' ')).join(', ')}
+                              </p>
+                            </div>
+                          )}
                         </>
                       )}
                       

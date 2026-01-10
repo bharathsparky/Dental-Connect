@@ -45,12 +45,24 @@ export interface DentureData {
 }
 
 // Implant-specific data
+export type ImplantStage = 'healing' | 'ready' | 'impression_taken' | null
+export type PlatformSize = 'narrow' | 'regular' | 'wide' | 'extra_wide' | null
+export type ImpressionTechnique = 'open_tray' | 'closed_tray' | 'digital_scan' | null
+
 export interface ImplantData {
   positions: string[]
+  implantStage: ImplantStage
   implantSystem: string | null
-  abutmentType: string | null
-  restorationType: ImplantRestorationType
+  platformSize: PlatformSize
+  implantDiameter: string | null
+  implantLength: string | null
   connectionType: ConnectionType
+  impressionTechnique: ImpressionTechnique
+  componentsIncluded: string[]  // impression_coping, implant_analog, healing_abutment, etc.
+  restorationType: ImplantRestorationType
+  abutmentType: string | null
+  healingAbutmentHeight: string | null
+  healingAbutmentDiameter: string | null
 }
 
 // Veneer-specific data
@@ -224,10 +236,18 @@ const initialDentureData: DentureData = {
 
 const initialImplantData: ImplantData = {
   positions: [],
+  implantStage: null,
   implantSystem: null,
-  abutmentType: null,
-  restorationType: null,
+  platformSize: null,
+  implantDiameter: null,
+  implantLength: null,
   connectionType: null,
+  impressionTechnique: null,
+  componentsIncluded: [],
+  restorationType: null,
+  abutmentType: null,
+  healingAbutmentHeight: null,
+  healingAbutmentDiameter: null,
 }
 
 const initialVeneerData: VeneerData = {
