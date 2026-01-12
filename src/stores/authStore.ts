@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// User role types
+export type UserRole = 'doctor' | 'lab' | null
+
 // Qualification options for dental professionals
 export const QUALIFICATIONS = [
   { id: 'bds', label: 'BDS', full: 'Bachelor of Dental Surgery' },
@@ -14,6 +17,63 @@ export const QUALIFICATIONS = [
   { id: 'mds_oral_path', label: 'MDS (Oral Pathology)', full: 'Master of Dental Surgery - Oral Pathology' },
   { id: 'mds_oral_medicine', label: 'MDS (Oral Medicine)', full: 'Master of Dental Surgery - Oral Medicine & Radiology' },
   { id: 'other', label: 'Other', full: 'Other Qualification' },
+] as const
+
+// Lab services offered
+export const LAB_SERVICES = [
+  { id: 'crowns', label: 'Crowns', category: 'fixed' },
+  { id: 'bridges', label: 'Bridges', category: 'fixed' },
+  { id: 'veneers', label: 'Veneers', category: 'fixed' },
+  { id: 'inlays_onlays', label: 'Inlays & Onlays', category: 'fixed' },
+  { id: 'full_dentures', label: 'Full Dentures', category: 'removable' },
+  { id: 'partial_dentures', label: 'Partial Dentures', category: 'removable' },
+  { id: 'immediate_dentures', label: 'Immediate Dentures', category: 'removable' },
+  { id: 'implant_crowns', label: 'Implant Crowns', category: 'implant' },
+  { id: 'implant_bridges', label: 'Implant Bridges', category: 'implant' },
+  { id: 'all_on_x', label: 'All-on-X', category: 'implant' },
+  { id: 'surgical_guides', label: 'Surgical Guides', category: 'digital' },
+  { id: 'night_guards', label: 'Night Guards', category: 'appliance' },
+  { id: 'retainers', label: 'Retainers', category: 'appliance' },
+  { id: 'clear_aligners', label: 'Clear Aligners', category: 'ortho' },
+  { id: 'orthodontic_appliances', label: 'Orthodontic Appliances', category: 'ortho' },
+  { id: 'waxups', label: 'Diagnostic Wax-ups', category: 'diagnostic' },
+  { id: 'models', label: 'Study Models', category: 'diagnostic' },
+] as const
+
+// Lab materials
+export const LAB_MATERIALS = [
+  { id: 'pfm', label: 'PFM (Porcelain Fused to Metal)', category: 'metal_ceramic' },
+  { id: 'zirconia', label: 'Zirconia', category: 'ceramic' },
+  { id: 'emax', label: 'E.max (Lithium Disilicate)', category: 'ceramic' },
+  { id: 'full_metal', label: 'Full Metal', category: 'metal' },
+  { id: 'gold', label: 'Gold', category: 'metal' },
+  { id: 'acrylic', label: 'Acrylic', category: 'resin' },
+  { id: 'flexible', label: 'Flexible Denture Material', category: 'resin' },
+  { id: 'peek', label: 'PEEK', category: 'advanced' },
+  { id: 'titanium', label: 'Titanium', category: 'implant' },
+  { id: 'composite', label: 'Composite', category: 'resin' },
+] as const
+
+// Lab equipment/technology
+export const LAB_EQUIPMENT = [
+  { id: 'cad_cam', label: 'CAD/CAM System' },
+  { id: '3d_printer', label: '3D Printer' },
+  { id: 'intraoral_scanner', label: 'Intraoral Scanner Compatible' },
+  { id: 'milling_machine', label: 'Milling Machine' },
+  { id: 'sintering_furnace', label: 'Sintering Furnace' },
+  { id: 'pressing_furnace', label: 'Pressing Furnace' },
+  { id: 'articulator', label: 'Semi/Fully Adjustable Articulator' },
+  { id: 'digital_shade', label: 'Digital Shade Matching' },
+] as const
+
+// Lab certifications
+export const LAB_CERTIFICATIONS = [
+  { id: 'iso_9001', label: 'ISO 9001:2015' },
+  { id: 'iso_13485', label: 'ISO 13485 (Medical Devices)' },
+  { id: 'fda_registered', label: 'FDA Registered' },
+  { id: 'ce_marked', label: 'CE Marked' },
+  { id: 'nadl', label: 'NADL Certified' },
+  { id: 'cdt', label: 'CDT Certified Technicians' },
 ] as const
 
 // Specialization options
@@ -62,6 +122,10 @@ export const DENTAL_COUNCILS = [
 
 export type Qualification = typeof QUALIFICATIONS[number]['id']
 export type Specialization = typeof SPECIALIZATIONS[number]['id']
+export type LabService = typeof LAB_SERVICES[number]['id']
+export type LabMaterial = typeof LAB_MATERIALS[number]['id']
+export type LabEquipment = typeof LAB_EQUIPMENT[number]['id']
+export type LabCertification = typeof LAB_CERTIFICATIONS[number]['id']
 
 export interface DentistProfile {
   // Basic Info
@@ -89,25 +153,76 @@ export interface DentistProfile {
   preferredPaymentMethod?: string
 }
 
+export interface LabProfile {
+  // Basic Info
+  ownerName: string
+  phone: string
+  email: string
+  
+  // Lab Info
+  labName: string
+  labAddress: string
+  labCity: string
+  labState: string
+  labPincode: string
+  labPhone: string
+  yearsInBusiness: number | null
+  
+  // Services & Capabilities
+  services: LabService[]
+  materials: LabMaterial[]
+  equipment: LabEquipment[]
+  certifications: LabCertification[]
+  
+  // Turnaround & Delivery
+  standardTurnaround: number // days
+  rushAvailable: boolean
+  rushTurnaround: number // days
+  pickupAvailable: boolean
+  deliveryAvailable: boolean
+  deliveryRadius: number // km
+  
+  // Business Info
+  gstNumber: string
+  panNumber: string
+  bankAccountNumber: string
+  bankIfscCode: string
+  bankName: string
+  
+  // Working Hours
+  workingDays: string[] // ['monday', 'tuesday', ...]
+  openTime: string // '09:00'
+  closeTime: string // '18:00'
+  
+  // Profile
+  description: string
+  profileImage: string
+  galleryImages: string[]
+}
+
 interface AuthState {
   // Auth state
   isAuthenticated: boolean
   isOnboardingComplete: boolean
   onboardingStep: number
+  userRole: UserRole
   
   // Profile data
   profile: DentistProfile
+  labProfile: LabProfile
   
   // OTP state
   otpSent: boolean
   otpVerified: boolean
   
   // Actions
+  setUserRole: (role: UserRole) => void
   setOnboardingStep: (step: number) => void
   nextOnboardingStep: () => void
   prevOnboardingStep: () => void
   
   updateProfile: (data: Partial<DentistProfile>) => void
+  updateLabProfile: (data: Partial<LabProfile>) => void
   
   sendOTP: (phone: string) => Promise<boolean>
   verifyOTP: (otp: string) => Promise<boolean>
@@ -134,20 +249,58 @@ const initialProfile: DentistProfile = {
   clinicPhone: '',
 }
 
+const initialLabProfile: LabProfile = {
+  ownerName: '',
+  phone: '',
+  email: '',
+  labName: '',
+  labAddress: '',
+  labCity: '',
+  labState: '',
+  labPincode: '',
+  labPhone: '',
+  yearsInBusiness: null,
+  services: [],
+  materials: [],
+  equipment: [],
+  certifications: [],
+  standardTurnaround: 7,
+  rushAvailable: false,
+  rushTurnaround: 3,
+  pickupAvailable: true,
+  deliveryAvailable: false,
+  deliveryRadius: 10,
+  gstNumber: '',
+  panNumber: '',
+  bankAccountNumber: '',
+  bankIfscCode: '',
+  bankName: '',
+  workingDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+  openTime: '09:00',
+  closeTime: '18:00',
+  description: '',
+  profileImage: '',
+  galleryImages: [],
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       isAuthenticated: false,
       isOnboardingComplete: false,
       onboardingStep: 1,
+      userRole: null,
       profile: initialProfile,
+      labProfile: initialLabProfile,
       otpSent: false,
       otpVerified: false,
+      
+      setUserRole: (role) => set({ userRole: role }),
       
       setOnboardingStep: (step) => set({ onboardingStep: step }),
       
       nextOnboardingStep: () => set((state) => ({ 
-        onboardingStep: Math.min(state.onboardingStep + 1, 6) 
+        onboardingStep: Math.min(state.onboardingStep + 1, 7) 
       })),
       
       prevOnboardingStep: () => set((state) => ({ 
@@ -158,10 +311,19 @@ export const useAuthStore = create<AuthState>()(
         profile: { ...state.profile, ...data }
       })),
       
+      updateLabProfile: (data) => set((state) => ({
+        labProfile: { ...state.labProfile, ...data }
+      })),
+      
       sendOTP: async (phone) => {
         // Simulate OTP sending
         await new Promise(resolve => setTimeout(resolve, 1000))
-        set({ otpSent: true, profile: { ...get().profile, phone } })
+        const role = get().userRole
+        if (role === 'doctor') {
+          set({ otpSent: true, profile: { ...get().profile, phone } })
+        } else {
+          set({ otpSent: true, labProfile: { ...get().labProfile, phone } })
+        }
         return true
       },
       
@@ -177,14 +339,16 @@ export const useAuthStore = create<AuthState>()(
       
       completeOnboarding: () => set({ 
         isOnboardingComplete: true,
-        onboardingStep: 6
+        onboardingStep: 7
       }),
       
       logout: () => set({
         isAuthenticated: false,
         isOnboardingComplete: false,
         onboardingStep: 1,
+        userRole: null,
         profile: initialProfile,
+        labProfile: initialLabProfile,
         otpSent: false,
         otpVerified: false,
       }),
@@ -201,7 +365,9 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         isOnboardingComplete: state.isOnboardingComplete,
+        userRole: state.userRole,
         profile: state.profile,
+        labProfile: state.labProfile,
         otpVerified: state.otpVerified,
       }),
     }

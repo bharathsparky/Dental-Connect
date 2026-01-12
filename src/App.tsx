@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom"
 import { MobileFrame } from "./components/layout/MobileFrame"
 import { BottomNav } from "./components/layout/BottomNav"
 import { SplashScreen } from "./components/SplashScreen"
+import { RoleSelection } from "./components/RoleSelection"
 import { OnboardingScreen } from "./components/OnboardingScreen"
+import { LabOnboardingScreen } from "./components/LabOnboardingScreen"
 import { ModalProvider, useModal } from "./contexts/ModalContext"
 import { useAuthStore } from "./stores/authStore"
 import { Home } from "./pages/dentist/Home"
@@ -15,8 +17,11 @@ import { OrderDetail } from "./pages/dentist/OrderDetail"
 import { LabProfile } from "./pages/dentist/LabProfile"
 import { Wallet } from "./pages/dentist/Wallet"
 import { Billing } from "./pages/dentist/Billing"
+// Lab pages (placeholder for now)
+import { LabDashboard } from "./pages/lab/LabDashboard"
 
-function AppContent() {
+// Doctor app content
+function DoctorAppContent() {
   const location = useLocation()
   const { isModalOpen } = useModal()
   
@@ -47,15 +52,38 @@ function AppContent() {
   )
 }
 
-// Main app wrapper to check auth state
-function AppWithAuth() {
-  const { isOnboardingComplete } = useAuthStore()
+// Lab app content
+function LabAppContent() {
+  return (
+    <div className="min-h-full">
+      <Routes>
+        <Route path="/" element={<LabDashboard />} />
+        <Route path="/orders" element={<LabDashboard />} />
+        <Route path="/profile" element={<LabDashboard />} />
+      </Routes>
+    </div>
+  )
+}
 
-  // Show onboarding if not complete
-  if (!isOnboardingComplete) {
-    return <OnboardingScreen />
+// Main app wrapper to check auth state and role
+function AppWithAuth() {
+  const { isOnboardingComplete, userRole } = useAuthStore()
+
+  // Step 1: Role Selection (if no role selected yet)
+  if (!userRole) {
+    return <RoleSelection />
   }
 
+  // Step 2+: Show role-specific onboarding if not complete
+  if (!isOnboardingComplete) {
+    if (userRole === 'doctor') {
+      return <OnboardingScreen />
+    } else if (userRole === 'lab') {
+      return <LabOnboardingScreen />
+    }
+  }
+
+  // Onboarding complete - show main app
   return (
     <>
       {/* Status bar area */}
@@ -63,9 +91,9 @@ function AppWithAuth() {
         <div className="text-[11px] text-white/50 font-medium">9:41</div>
       </div>
       
-      {/* Scrollable content */}
+      {/* Scrollable content - role specific */}
       <div className="h-[calc(100%-54px)] overflow-auto no-scrollbar">
-        <AppContent />
+        {userRole === 'doctor' ? <DoctorAppContent /> : <LabAppContent />}
       </div>
     </>
   )
