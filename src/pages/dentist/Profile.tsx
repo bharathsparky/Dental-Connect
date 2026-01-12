@@ -12,11 +12,13 @@ import {
   Settings,
   Wallet,
   FileText,
-  IndianRupee
+  IndianRupee,
+  BadgeCheck
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { usePaymentStore, formatCurrency } from "@/stores/paymentStore"
+import { useAuthStore, SPECIALIZATIONS } from "@/stores/authStore"
 
 const MENU_ITEMS = [
   { 
@@ -52,9 +54,24 @@ const MENU_ITEMS = [
 export function Profile() {
   const navigate = useNavigate()
   const { wallet, creditStatuses } = usePaymentStore()
+  const { profile, logout } = useAuthStore()
   
   // Calculate total outstanding
   const totalOutstanding = creditStatuses.reduce((sum, cs) => sum + cs.currentOutstanding, 0)
+  
+  // Get initials from name
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'DR'
+  }
+  
+  // Get specialization label
+  const specializationLabel = SPECIALIZATIONS.find(s => s.id === profile.specialization)?.label || 'Dentist'
+  
+  // Handle logout
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <div className="min-h-full bg-atmosphere flex flex-col">
@@ -68,17 +85,33 @@ export function Profile() {
             <CardContent className="p-5 pt-5">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.5_0.15_220)] flex items-center justify-center">
-                  <span className="text-xl font-bold text-white">PS</span>
+                  <span className="text-xl font-bold text-white">{getInitials(profile.fullName)}</span>
                 </div>
                 <div className="flex-1">
-                  <h2 className="font-semibold text-lg text-white">Dr. Priya Sharma</h2>
-                  <p className="text-sm text-white/60">General Dentist</p>
-                  <Badge className="mt-2">Verified</Badge>
+                  <h2 className="font-semibold text-lg text-white">
+                    {profile.fullName || 'Dr. User'}
+                  </h2>
+                  <p className="text-sm text-white/60">{specializationLabel}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge className="gap-1">
+                      <BadgeCheck className="w-3 h-3" />
+                      Verified
+                    </Badge>
+                    <span className="text-xs text-white/40 font-mono">{profile.dentalCouncilNumber}</span>
+                  </div>
                 </div>
                 <button className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
                   <Settings className="w-5 h-5 text-white/70" />
                 </button>
               </div>
+              {profile.clinicName && (
+                <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-sm text-white/60">
+                  <Building2 className="w-4 h-4" />
+                  <span>{profile.clinicName}</span>
+                  <span className="text-white/30">•</span>
+                  <span>{profile.clinicCity}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -186,7 +219,10 @@ export function Profile() {
         >
           <Card variant="gradient">
             <CardContent className="p-0">
-              <button className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/5 transition-colors">
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/5 transition-colors"
+              >
                 <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
                   <LogOut className="w-5 h-5 text-destructive" />
                 </div>

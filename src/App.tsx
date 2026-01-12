@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom"
 import { MobileFrame } from "./components/layout/MobileFrame"
 import { BottomNav } from "./components/layout/BottomNav"
 import { SplashScreen } from "./components/SplashScreen"
+import { OnboardingScreen } from "./components/OnboardingScreen"
 import { ModalProvider, useModal } from "./contexts/ModalContext"
+import { useAuthStore } from "./stores/authStore"
 import { Home } from "./pages/dentist/Home"
 import { Labs } from "./pages/dentist/Labs"
 import { Orders } from "./pages/dentist/Orders"
@@ -45,6 +47,30 @@ function AppContent() {
   )
 }
 
+// Main app wrapper to check auth state
+function AppWithAuth() {
+  const { isOnboardingComplete } = useAuthStore()
+
+  // Show onboarding if not complete
+  if (!isOnboardingComplete) {
+    return <OnboardingScreen />
+  }
+
+  return (
+    <>
+      {/* Status bar area */}
+      <div className="h-[54px] bg-background flex items-end justify-center pb-1">
+        <div className="text-[11px] text-white/50 font-medium">9:41</div>
+      </div>
+      
+      {/* Scrollable content */}
+      <div className="h-[calc(100%-54px)] overflow-auto no-scrollbar">
+        <AppContent />
+      </div>
+    </>
+  )
+}
+
 function App() {
   const [showSplash, setShowSplash] = useState(true)
 
@@ -55,17 +81,7 @@ function App() {
           {showSplash ? (
             <SplashScreen onComplete={() => setShowSplash(false)} />
           ) : (
-            <>
-              {/* Status bar area */}
-              <div className="h-[54px] bg-background flex items-end justify-center pb-1">
-                <div className="text-[11px] text-white/50 font-medium">9:41</div>
-              </div>
-              
-              {/* Scrollable content */}
-              <div className="h-[calc(100%-54px)] overflow-auto no-scrollbar">
-                <AppContent />
-              </div>
-            </>
+            <AppWithAuth />
           )}
         </MobileFrame>
       </ModalProvider>
